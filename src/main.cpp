@@ -18,8 +18,12 @@ bool endsWithNRO(const char* filename) {
     return len > 4 && strcmp(filename + len - 4, ".nro") == 0;
 }
 
-// Function to scan a directory for .nro files
-void scanForNROs(const char* directoryPath) {
+// Function to scan a directory for .nro files with a depth limit
+void scanForNROs(const char* directoryPath, int depth, bool* foundNRO) {
+    if (depth > 2) {
+        return; // Do not scan beyond 2 levels
+    }
+
     DIR* dir = opendir(directoryPath);
     if (dir == NULL) {
         printf("Failed to open directory: %s\n", directoryPath);
@@ -40,21 +44,28 @@ void scanForNROs(const char* directoryPath) {
         stat(filePath, &pathStat);
 
         if (S_ISDIR(pathStat.st_mode)) {
-            // Recursively scan subdirectories
-            scanForNROs(filePath);
+            if (depth < 2) {
+                // Recursively scan subdirectories if within depth limit
+                scanForNROs(filePath, depth + 1, foundNRO);
+            }
         } else if (endsWithNRO(entry->d_name)) {
-            // Wait for user input to display the .nro file
+            *foundNRO = true;
+            // Process .nro file
+            const char* version = getmeta(filePath);
+            const char* name = getmetaname(filePath);
+
+            // Display the file when "A" button is held
+            PadState pad;
+            padInitializeDefault(&pad);
+
             while (appletMainLoop()) {
-                PadState pad;
-                padInitializeDefault(&pad);
                 padUpdate(&pad);
 
                 u64 kHeld = padGetButtons(&pad);
                 if (kHeld & HidNpadButton_A) {
-                    const char* version = getmeta(filePath);
-                    const char* name = getmetaname(filePath);
                     printf("%s - %s - %s\n", name, entry->d_name, version);
-                    break;
+                    consoleUpdate(NULL);
+                    break; // Proceed to the next file
                 }
 
                 u64 kDown = padGetButtonsDown(&pad);
@@ -78,7 +89,7 @@ int main(int argc, char* argv[]) {
     padConfigureInput(1, HidNpadStyleSet_NpadStandard);
 
     // Print a message to indicate the program has started
-    printf("Scanning for .nro files in /switch/...\n\n");
+    printf("Hold button A to list installed apps\n\n");
 
     // Directory path to start scanning
     const char* basePath = "sdmc:/switch/";
@@ -92,8 +103,16 @@ int main(int argc, char* argv[]) {
     }
     closedir(baseDir);
 
+    // Track if any .nro files were found
+    bool foundNRO = false;
+
     // Start scanning for .nro files
-    scanForNROs(basePath);
+    scanForNROs(basePath, 0, &foundNRO);
+
+    if (foundNRO) {
+        printf("All files and subfolders have been scanned. Press PLUS to exit.\n");
+        consoleUpdate(NULL);
+    }
 
     // Wait for user input to exit
     while (appletMainLoop()) {
