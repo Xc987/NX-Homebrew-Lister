@@ -9,8 +9,9 @@
 #include <unistd.h>
 #include "nro.hpp"
 
-#define MAX_ENTRIES 1024
-#define DELAY_FRAMES 5
+
+int number = 1;
+char number_with_hash[10]; 
 
 // Function to check if a string ends with .nro
 bool endsWithNRO(const char* filename) {
@@ -53,8 +54,59 @@ void scanForNROs(const char* directoryPath, int depth, bool* foundNRO) {
             // Process .nro file
             const char* version = getmeta(filePath);
             const char* name = getmetaname(filePath);
-
+            const char* author = getmetaauthor(filePath);
             // Display the file when "A" button is held
+
+
+            char str[100];
+            strcpy(str, name);
+            int length = strlen(str);
+
+            // Check if the string length is greater than 27
+            if (length > 25) {
+                // Truncate the string to 24 characters and add "..."
+                str[24] = '\0';  // Add null terminator after the 24th character
+                strcat(str, ".");  // Append "..."
+            }
+            char str2[100];
+            strcpy(str2, entry->d_name);
+            length = strlen(str2);
+
+            // Check if the string length is greater than 27
+            if (length > 4) {
+                str2[length - 4] = '\0';  // Add null terminator 4 characters from the end
+            } else {
+                str2[0] = '\0';  // If string length is less than or equal to 4, make it an empty string
+            }
+            length = strlen(str2);
+            if (length > 20) {
+                // Truncate the string to 24 characters and add "..."
+                str2[19] = '\0';  // Add null terminator after the 24th character
+                strcat(str2, ".");  // Append "..."
+            }
+
+            char str3[100];
+            strcpy(str3, author);
+            length = strlen(str3);
+
+            // Check if the string length is greater than 27
+            if (length > 20) {
+                // Truncate the string to 24 characters and add "..."
+                str3[19] = '\0';  // Add null terminator after the 24th character
+                strcat(str3, ".");  // Append "..."
+            }
+
+
+            char str4[100];
+            strcpy(str4, version);
+            length = strlen(str4);
+
+            // Check if the string length is greater than 27
+            if (length > 7) {
+                // Truncate the string to 24 characters and add "..."
+                str4[6] = '\0';  // Add null terminator after the 24th character
+                strcat(str4, ".");  // Append "..."
+            }
             PadState pad;
             padInitializeDefault(&pad);
 
@@ -63,7 +115,9 @@ void scanForNROs(const char* directoryPath, int depth, bool* foundNRO) {
 
                 u64 kHeld = padGetButtons(&pad);
                 if (kHeld & HidNpadButton_A) {
-                    printf("%s - %s - %s\n", name, entry->d_name, version);
+                    sprintf(number_with_hash, "#%d", number);
+                    printf("%-3s|%-25s|%-20s|%-20s|%-7s\n", number_with_hash, str, str2, str3, str4);
+                    number++;
                     consoleUpdate(NULL);
                     break; // Proceed to the next file
                 }
@@ -89,11 +143,11 @@ int main(int argc, char* argv[]) {
     padConfigureInput(1, HidNpadStyleSet_NpadStandard);
 
     // Print a message to indicate the program has started
-    printf("Hold button A to list installed apps\n\n");
-
-    // Directory path to start scanning
+    printf("Hold button A to list installed apps\n");
+    printf("--------------------------------------------------------------------------------");
+    printf("%-3s|%-25s|%-20s|%-20s|%-7s\n", "#", "App name", "File name (.nro)", "Author", "Version");
+    printf("%-3s|%-25s|%-20s|%-20s|%-7s", "---", "-------------------------", "--------------------", "--------------------", "--------");
     const char* basePath = "sdmc:/switch/";
-
     // Check if the base directory exists
     DIR* baseDir = opendir(basePath);
     if (baseDir == NULL) {

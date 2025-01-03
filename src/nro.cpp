@@ -95,3 +95,19 @@ const char* getmetaname(const char* path) {
     }
     return "Failed to get";
 }
+const char* getmetaauthor(const char* path) {
+    const char* NRO_FILE_PATH = path;
+    Editor editor = {0};
+    editor.filename = (char *)NRO_FILE_PATH;
+
+    if (loadBinaryData(&editor)) {
+        Asset *asset = &editor.asset;
+        char* versionCopy = strdup(asset->author); // Make a copy
+        free(asset->nacp);
+        free(asset->icon);
+        free(asset->romfs);
+        free(editor.data);
+        return versionCopy; // Return the copy
+    }
+    return "Failed to get";
+}

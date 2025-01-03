@@ -5,8 +5,8 @@ Until first stable release, you have to build the project to get .nro files.
 
 ## Todo
 
-* [ ] List all apps in /switch/*
-* [ ] Display app info such as name, author, version, filename from .nro file
+* [x] List all apps in /switch/*
+* [x] Display app info such as name, author, version, filename from .nro file
 * [ ] On start up page to select between displaying apps / overlays / sysmodules
 * [ ] List all overlays in /switch/.overlays/*
 * [ ] Display overlay info from .ovl file.

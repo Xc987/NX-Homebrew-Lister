@@ -1,6 +1,6 @@
 const char* getmeta(const char* path);
 const char* getmetaname(const char* path);
-
+const char* getmetaauthor(const char* path);
 typedef struct {
     uint8_t *nacp;
     uint8_t *icon;
