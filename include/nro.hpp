@@ -1,4 +1,4 @@
-const char* getmeta(const char* path);
+const char* getmetaversion(const char* path);
 const char* getmetaname(const char* path);
 const char* getmetaauthor(const char* path);
 typedef struct {

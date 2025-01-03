@@ -3,10 +3,10 @@
 #include <string.h>
 #include <switch.h>
 #include "nro.hpp"
+
 #define NRO_MAGIC "NRO0"
 #define ASET_MAGIC "ASET"
 
-//Read .nro file assets
 void loadAsset(Asset *asset, uint8_t *data, size_t size) {
     size_t offset = 0x8;
     uint64_t icon_pos = *(uint64_t *)(data + offset);
@@ -32,7 +32,6 @@ void loadAsset(Asset *asset, uint8_t *data, size_t size) {
     asset->version[15] = '\0';
 }
 
-//Read .nro file
 int loadBinaryData(Editor *editor) { 
     FILE *file = fopen(editor->filename, "rb");
     if (!file) {
@@ -63,19 +62,19 @@ int loadBinaryData(Editor *editor) {
     return 1;
 }
 
-const char* getmeta(const char* path) {
+const char* getmetaversion(const char* path) {
     const char* NRO_FILE_PATH = path;
     Editor editor = {0};
     editor.filename = (char *)NRO_FILE_PATH;
 
     if (loadBinaryData(&editor)) {
         Asset *asset = &editor.asset;
-        char* versionCopy = strdup(asset->version); // Make a copy
+        char* versionCopy = strdup(asset->version);
         free(asset->nacp);
         free(asset->icon);
         free(asset->romfs);
         free(editor.data);
-        return versionCopy; // Return the copy
+        return versionCopy;
     }
     return "Failed to get";
 }
@@ -86,12 +85,12 @@ const char* getmetaname(const char* path) {
 
     if (loadBinaryData(&editor)) {
         Asset *asset = &editor.asset;
-        char* versionCopy = strdup(asset->name); // Make a copy
+        char* versionCopy = strdup(asset->name);
         free(asset->nacp);
         free(asset->icon);
         free(asset->romfs);
         free(editor.data);
-        return versionCopy; // Return the copy
+        return versionCopy;
     }
     return "Failed to get";
 }
@@ -102,12 +101,12 @@ const char* getmetaauthor(const char* path) {
 
     if (loadBinaryData(&editor)) {
         Asset *asset = &editor.asset;
-        char* versionCopy = strdup(asset->author); // Make a copy
+        char* versionCopy = strdup(asset->author);
         free(asset->nacp);
         free(asset->icon);
         free(asset->romfs);
         free(editor.data);
-        return versionCopy; // Return the copy
+        return versionCopy;
     }
     return "Failed to get";
 }
