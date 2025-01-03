@@ -2,26 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <switch.h>
-
+#include "nro.hpp"
 #define NRO_MAGIC "NRO0"
 #define ASET_MAGIC "ASET"
-
-typedef struct {
-    uint8_t *nacp;
-    uint8_t *icon;
-    uint8_t *romfs;
-    size_t offset;
-    char name[512];
-    char author[256];
-    char version[16];
-} Asset;
-
-typedef struct {
-    char *filename;
-    uint8_t *data;
-    size_t nrosize;
-    Asset asset;
-} Editor;
 
 //Read .nro file assets
 void loadAsset(Asset *asset, uint8_t *data, size_t size) {
@@ -80,42 +63,35 @@ int loadBinaryData(Editor *editor) {
     return 1;
 }
 
-int main(int argc, char **argv) {
-    consoleInit(NULL);
-    padConfigureInput(1, HidNpadStyleSet_NpadStandard);
-    PadState pad;
-    padInitializeDefault(&pad);
-
-    const char *NRO_FILE_PATH = "/switch/appstore.nro";
-
+const char* getmeta(const char* path) {
+    const char* NRO_FILE_PATH = path;
     Editor editor = {0};
     editor.filename = (char *)NRO_FILE_PATH;
 
     if (loadBinaryData(&editor)) {
         Asset *asset = &editor.asset;
-        printf("\x1b[3;1HFile: %s\n", NRO_FILE_PATH);
-        printf("\x1b[4;1HTitle: %s\n", asset->name);
-        printf("\x1b[5;1HAuthor: %s\n", asset->author);
-        printf("\x1b[6;1HVersion: %s\n", asset->version);
-
+        char* versionCopy = strdup(asset->version); // Make a copy
         free(asset->nacp);
         free(asset->icon);
         free(asset->romfs);
         free(editor.data);
-    } else {
-        printf("\x1b[3;1HFailed to read metadata from the NRO file.\n");
+        return versionCopy; // Return the copy
     }
-    printf("\x1b[8;1HPress + to exit.\n");
+    return "Failed to get";
+}
+const char* getmetaname(const char* path) {
+    const char* NRO_FILE_PATH = path;
+    Editor editor = {0};
+    editor.filename = (char *)NRO_FILE_PATH;
 
-    while (appletMainLoop())
-    {
-        padUpdate(&pad);
-        u64 kDown = padGetButtonsDown(&pad);
-
-        if (kDown & HidNpadButton_Plus)
-            break;
-        consoleUpdate(NULL);
+    if (loadBinaryData(&editor)) {
+        Asset *asset = &editor.asset;
+        char* versionCopy = strdup(asset->name); // Make a copy
+        free(asset->nacp);
+        free(asset->icon);
+        free(asset->romfs);
+        free(editor.data);
+        return versionCopy; // Return the copy
     }
-    consoleExit(NULL);
-    return 0;
+    return "Failed to get";
 }
