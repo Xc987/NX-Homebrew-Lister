@@ -104,7 +104,6 @@ void scanDirectoryForNROs(const char *dirpath, int depth, FILE *outputFile) {
             }
         }
     }
-
     closedir(dir);
 }
 
