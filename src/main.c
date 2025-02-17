@@ -53,7 +53,7 @@ int loadBinaryData(Editor *editor) {
     fclose(file);
     uint8_t *data = editor->data;
     if (memcmp(data + 0x10, NRO_MAGIC, 4) != 0) {
-        fprintf(stderr, "Invalid NRO file format!\n");
+        fprintf(stderr, "Invalid file format!\n");
         free(editor->data);
         return 0;
     }
@@ -106,14 +106,58 @@ void scanDirectoryForNROs(const char *dirpath, int depth, FILE *outputFile) {
     }
     closedir(dir);
 }
+void scanDirectoryForOVLs(const char *dirpath, int depth, FILE *outputFile) {
+    if (depth > 1) return;
+    DIR *dir = opendir(dirpath);
+    if (!dir) {
+        printf("[ERROR] Failed to open directory: %s\n", dirpath);
+        return;
+    }
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type == DT_REG) {
+            const char *filename = entry->d_name;
+            size_t len = strlen(filename);
+            if (len > 4 && strcmp(filename + len - 4, ".ovl") == 0) {
+                char filepath[1024];
+                snprintf(filepath, sizeof(filepath), "%s/%s", dirpath, filename);
+                Editor editor = {0};
+                editor.filename = filepath;
+                if (loadBinaryData(&editor)) {
+                    Asset *asset = &editor.asset;
+                    printf("%s\n", asset->name);
+                    fprintf(outputFile, "%s%s\n", "Name: ", asset->name);
+                    fprintf(outputFile, "%s%s\n", "Author: ", asset->author);
+                    fprintf(outputFile, "%s%s\n", "Version: ", asset->version);
+                    fprintf(outputFile, "%s%s\n\n", "Path: ", filepath);
+                    free(asset->nacp);
+                    free(asset->icon);
+                    free(asset->romfs);
+                    free(editor.data);
+                }
+                consoleUpdate(NULL);
+                
+            }
+        } else if (entry->d_type == DT_DIR) {
+            if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+                char subdirpath[1024];
+                snprintf(subdirpath, sizeof(subdirpath), "%s/%s", dirpath, entry->d_name);
+                scanDirectoryForOVLs(subdirpath, depth + 1, outputFile);
+            }
+        }
+    }
+    closedir(dir);
+}
 
 int main(int argc, char **argv) {
     consoleInit(NULL);
-    printf("Scanning /switch/ dirrectory for nro files\n");
+    printf("Scanning for installed homebrew software\n");
     FILE *outputFile = fopen("/list.txt", "w");
-    fprintf(outputFile, "%s\n\n", "Applications");
+    fprintf(outputFile, "%s\n\n\n", "Applications");
     const char *dirpath = "/switch"; 
     scanDirectoryForNROs(dirpath, 0, outputFile);
+    fprintf(outputFile, "\n%s\n\n\n", "Overlays");
+    scanDirectoryForOVLs(dirpath, 0, outputFile);
     fclose(outputFile); 
     printf("\nExpoerted to /list.txt");
     while (appletMainLoop()) {
