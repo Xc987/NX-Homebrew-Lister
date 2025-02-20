@@ -315,6 +315,9 @@ void scanForPatches(FILE *outputFile) {
 }
 int exportall() {
     consoleInit(NULL);
+    padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+    PadState pad;
+    padInitializeDefault(&pad);
     const char *dirpath = "/switch"; 
     printf("Scanning for installed homebrew software\n");
     FILE *outputFile = fopen("/list.txt", "w");
@@ -343,6 +346,11 @@ int exportall() {
     fclose(outputFile); 
     printf("\nExpoerted to /list.txt");
     while (appletMainLoop()) {
+        padUpdate(&pad);
+        u64 kDown = padGetButtonsDown(&pad);
+        if (kDown & HidNpadButton_Plus) {
+            break;
+        }
         consoleUpdate(NULL);
     }
     consoleExit(NULL);
