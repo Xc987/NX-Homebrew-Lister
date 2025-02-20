@@ -282,21 +282,45 @@ void scanDirectoryForOVLs(const char *dirpath, int depth, FILE *outputFile) {
     closedir(dir);
 }
 
+void scanForPayloads(FILE *outputFile) {
+    DIR *dir;
+    struct dirent *ent;
+    const char *path = "/bootloader/payloads/";
+    dir = opendir(path);
+    if (dir == NULL) {
+        return;
+    }
+    while ((ent = readdir(dir)) != NULL) {
+        printf("%s\n", ent->d_name);
+        fprintf(outputFile, "%s%s\n", "File: ", ent->d_name);
+        consoleUpdate(NULL);
+    }
+    closedir(dir);
+}
+
 int exportall() {
     consoleInit(NULL);
     const char *dirpath = "/switch"; 
     printf("Scanning for installed homebrew software\n");
     FILE *outputFile = fopen("/list.txt", "w");
+
     fprintf(outputFile, "%s\n\n\n", "Applications");
     printf("\n%s\n\n\n", "Applications");
     scanDirectoryForNROs(dirpath, 0, outputFile);
+
     fprintf(outputFile, "\n%s\n\n\n", "Overlays");
     printf("\n%s\n\n\n", "Overlays");
     scanDirectoryForOVLs(dirpath, 0, outputFile);
+
     fprintf(outputFile, "\n%s\n\n\n", "Sysmodules");
     printf("\n%s\n\n\n", "Sysmodules");
     dirpath = "/atmosphere/contents/";
     scanDirectoryForSYS(dirpath, outputFile);
+
+    fprintf(outputFile, "\n%s\n\n\n", "Payloads");
+    printf("\n%s\n\n\n", "Payloads");
+    scanForPayloads(outputFile);
+
     fclose(outputFile); 
     printf("\nExpoerted to /list.txt");
     while (appletMainLoop()) {
