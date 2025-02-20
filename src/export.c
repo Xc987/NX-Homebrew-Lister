@@ -297,7 +297,22 @@ void scanForPayloads(FILE *outputFile) {
     }
     closedir(dir);
 }
-
+void scanForPatches(FILE *outputFile) {
+    DIR* dir = opendir("/atmosphere/exefs_patches/");
+    if (dir == NULL) {
+        return;
+    } else {
+        struct dirent* entry;
+        while ((entry = readdir(dir)) != NULL) {
+            if (entry->d_type == DT_DIR && entry->d_name[0] != '.') {
+                printf("%s\n", entry->d_name);
+                fprintf(outputFile, "%s%s\n", "Folder: ", entry->d_name);
+                consoleUpdate(NULL);
+            }
+        }
+        closedir(dir);
+    }
+}
 int exportall() {
     consoleInit(NULL);
     const char *dirpath = "/switch"; 
@@ -305,21 +320,25 @@ int exportall() {
     FILE *outputFile = fopen("/list.txt", "w");
 
     fprintf(outputFile, "%s\n\n\n", "Applications");
-    printf("\n%s\n\n\n", "Applications");
+    printf("\n%s\n\n", "Applications");
     scanDirectoryForNROs(dirpath, 0, outputFile);
 
     fprintf(outputFile, "\n%s\n\n\n", "Overlays");
-    printf("\n%s\n\n\n", "Overlays");
+    printf("\n%s\n\n", "Overlays");
     scanDirectoryForOVLs(dirpath, 0, outputFile);
 
     fprintf(outputFile, "\n%s\n\n\n", "Sysmodules");
-    printf("\n%s\n\n\n", "Sysmodules");
+    printf("\n%s\n\n", "Sysmodules");
     dirpath = "/atmosphere/contents/";
     scanDirectoryForSYS(dirpath, outputFile);
 
     fprintf(outputFile, "\n%s\n\n\n", "Payloads");
-    printf("\n%s\n\n\n", "Payloads");
+    printf("\n%s\n\n", "Payloads");
     scanForPayloads(outputFile);
+
+    fprintf(outputFile, "\n\n%s\n\n\n", "exeFS Patches");
+    printf("\n%s\n\n", "exeFS Patches");
+    scanForPatches(outputFile);
 
     fclose(outputFile); 
     printf("\nExpoerted to /list.txt");
