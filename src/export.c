@@ -11,6 +11,7 @@
 #define TOOLBOX_FILE "toolbox.json"
 #define FLAGS_DIR "flags"
 #define BOOT2_FLAG "boot2.flag"
+#define PREFIX "0100"
 
 typedef struct {
     uint8_t *nacp;
@@ -313,6 +314,107 @@ void scanForPatches(FILE *outputFile) {
         closedir(dir);
     }
 }
+void contains_special_files(const char *folder_path, FILE *outputFile) {
+    const char *subfolders[] = {"cheats", "romfs", "exefs"};
+    const char *file_name = "icon.jpg";
+    struct stat statbuf;
+
+    // Check for each subfolder
+    for (int i = 0; i < 3; i++) {
+        char subfolder_path[256];
+        snprintf(subfolder_path, sizeof(subfolder_path), "%s/%s", folder_path, subfolders[i]);
+
+        if (stat(subfolder_path, &statbuf) == 0 && S_ISDIR(statbuf.st_mode)) {
+            fprintf(outputFile, "%s%s\n", "Content: ", subfolders[i]);
+        }
+    }
+
+    // Check for the icon.jpg file
+    char icon_path[256];
+    snprintf(icon_path, sizeof(icon_path), "%s/%s", folder_path, file_name);
+
+    if (stat(icon_path, &statbuf) == 0 && S_ISREG(statbuf.st_mode)) {
+        fprintf(outputFile, "%s%s\n", "Content: ", file_name);
+    }
+}
+
+void scanForContent(const char *prefix, FILE *outputFile) {
+    DIR *dir;
+    struct dirent *entry;
+
+    dir = opendir("/atmosphere/contents/");
+    if (!dir) {
+        return;
+    }
+
+    printf("Scanning %s...\n\n", "/atmosphere/contents/");
+
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type == DT_DIR && strncmp(entry->d_name, prefix, strlen(prefix)) == 0) {
+            if (entry->d_name[4] == '0') {
+                continue;
+            }
+            char modified_name[34];
+            snprintf(modified_name, sizeof(modified_name), "0x%.30s", entry->d_name);
+            Result rc=0;
+            u64 application_id = strtoull(modified_name, NULL, 16);
+            NsApplicationControlData *buf=NULL;
+            u64 outsize=0;
+
+            NacpLanguageEntry *langentry = NULL;
+            char name[0x201];
+
+            buf = (NsApplicationControlData*)malloc(sizeof(NsApplicationControlData));
+            if (buf==NULL) {
+                rc = MAKERESULT(Module_Libnx, LibnxError_OutOfMemory);
+                printf("Failed to alloc mem.\n");
+            }
+            else {
+                memset(buf, 0, sizeof(NsApplicationControlData));
+            }
+            if (R_SUCCEEDED(rc)) {
+                rc = nsInitialize();
+                if (R_FAILED(rc)) {
+                    printf("nsInitialize() failed: 0x%x\n", rc);
+                }
+            }
+            if (R_SUCCEEDED(rc)) {
+                rc = nsGetApplicationControlData(NsApplicationControlSource_Storage, application_id, buf, sizeof(NsApplicationControlData), &outsize);
+                if (R_FAILED(rc)) {
+                    printf("nsGetApplicationControlData() failed: 0x%x\n", rc);
+                }
+
+                if (outsize < sizeof(buf->nacp)) {
+                    rc = -1;
+                    printf("Outsize is too small: 0x%lx.\n", outsize);
+                }
+
+                if (R_SUCCEEDED(rc)) {
+                    rc = nacpGetLanguageEntry(&buf->nacp, &langentry);
+                    if (R_FAILED(rc) || langentry==NULL) printf("Failed to load LanguageEntry.\n");
+                }
+
+                if (R_SUCCEEDED(rc)) {
+                    memset(name, 0, sizeof(name));
+                    strncpy(name, langentry->name, sizeof(name)-1);//Don't assume the nacp string is NUL-terminated for safety.
+                    printf("%s\n", name);
+                    fprintf(outputFile, "%s%s\n", "Name: ", name);
+                    fprintf(outputFile, "%s%s\n", "TID: ", entry->d_name);
+                    char full_folder_path[300];
+                    snprintf(full_folder_path, sizeof(full_folder_path), "%s/%s", "/atmosphere/contents/" , entry->d_name);
+                    contains_special_files(full_folder_path, outputFile);
+                    fprintf(outputFile, "\n");
+                    
+                }
+                nsExit();
+            }
+            free(buf);
+            consoleUpdate(NULL);
+        }
+    }
+
+    closedir(dir);
+}
 int exportall() {
     consoleInit(NULL);
     padConfigureInput(1, HidNpadStyleSet_NpadStandard);
@@ -342,6 +444,10 @@ int exportall() {
     fprintf(outputFile, "\n\n%s\n\n\n", "exeFS Patches");
     printf("\n%s\n\n", "exeFS Patches");
     scanForPatches(outputFile);
+
+    fprintf(outputFile, "\n\n%s\n\n\n", "External game content");
+    printf("\n%s\n\n", "External game content");
+    scanForContent(PREFIX, outputFile);
 
     fclose(outputFile); 
     printf("\nExpoerted to /list.txt");
