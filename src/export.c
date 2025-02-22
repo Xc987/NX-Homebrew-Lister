@@ -14,7 +14,12 @@
 #define BOOT2_FLAG "boot2.flag"
 #define PREFIX "0100"
 
-int lines = 0;
+int foundApps = 0;
+int foundOverlays = 0;
+int foundSysmodules = 0;
+int foundPayloads = 0;
+int foundPatches = 0;
+int foundContent = 0;
 
 typedef struct {
     uint8_t *nacp;
@@ -107,61 +112,6 @@ char* extractValueForKey(const char* json, const char* key) {
     return NULL;
 }
 
-void scanDirectoryForSYS(const char* basePath, FILE *outputFile) {
-    DIR* dir = opendir(basePath);
-    if (!dir) {
-        return;
-    }
-    struct dirent* entry;
-    while ((entry = readdir(dir)) != NULL) {
-        if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
-            char subfolderPath[PATH_MAX];
-            snprintf(subfolderPath, PATH_MAX, "%s%s/", basePath, entry->d_name);
-            char toolboxPath[PATH_MAX];
-            int ret = snprintf(toolboxPath, PATH_MAX, "%s%s", subfolderPath, TOOLBOX_FILE);
-            if (ret < 0) {
-                abort();
-            }
-            FILE* testFile = fopen(toolboxPath, "rb");
-            if (testFile) {
-                fclose(testFile);
-                char flagsPath[PATH_MAX];
-                int ret = snprintf(flagsPath, PATH_MAX, "%s%s/", subfolderPath, FLAGS_DIR);
-                if (ret < 0) {
-                    abort();
-                }
-                char boot2FlagPath[PATH_MAX];
-                ret = snprintf(boot2FlagPath, PATH_MAX, "%s%s", flagsPath, BOOT2_FLAG);
-                if (ret < 0) {
-                    abort();
-                }
-                FILE* jsonFile = fopen(toolboxPath, "r");
-                if (jsonFile) {
-                    char jsonContent[2048] = {0};
-                    fread(jsonContent, 1, sizeof(jsonContent) - 1, jsonFile);
-                    fclose(jsonFile);
-                    removeCR(jsonContent);
-                    char* nameValue = extractValueForKey(jsonContent, "name");
-                    char* tidValue = extractValueForKey(jsonContent, "tid");
-                    //char* requiresRebootValue = extractValueForKey(jsonContent, "requires_reboot");
-                    printf(CONSOLE_ESC(6;14H) "                                                         ");
-                    printf(CONSOLE_ESC(6;14H) "%s", nameValue ? nameValue : "N/A");
-                    fprintf(outputFile, "%s%s\n", "Name: ", nameValue ? nameValue : "N/A");
-                    fprintf(outputFile, "%s%s\n", "TID: ", tidValue ? tidValue : "N/A");
-                    if (fileExists(boot2FlagPath)) {
-                        fprintf(outputFile, "%s%s\n\n", "Enabled: ", "Yes");
-                    } else {
-                        fprintf(outputFile, "%s%s\n\n", "Enabled: ", "No");
-                    }
-                    free(nameValue);
-                    free(tidValue);
-                }
-                consoleUpdate(NULL);
-            }
-        }
-    }
-    closedir(dir);
-}
 void loadAsset(Asset *asset, uint8_t *data, size_t size) {
     size_t offset = 0x18;
     uint64_t nacp_pos = *(uint64_t *)(data + offset);
@@ -230,8 +180,10 @@ void scanDirectoryForNROs(const char *dirpath, int depth, FILE *outputFile) {
                 editor.filename = filepath;
                 if (loadBinaryData(&editor)) {
                     Asset *asset = &editor.asset;
-                    printf(CONSOLE_ESC(4;16H) "                                                                ");
-                    printf(CONSOLE_ESC(4;16H) "%s", asset->name);
+                    foundApps = foundApps + 1;
+                    printf(CONSOLE_ESC(4;2H) "                                                                              ");
+                    printf(CONSOLE_ESC(4;2H));
+                    printf("%s%d%s%s", "Applications [", foundApps, "]: ", asset->name);
                     int hasStar = checkStarFile(dirpath, filename);
                     fprintf(outputFile, "%s%s\n", "Name: ", asset->name);
                     fprintf(outputFile, "%s%s\n", "Author: ", asset->author);
@@ -279,8 +231,10 @@ void scanDirectoryForOVLs(const char *dirpath, int depth, FILE *outputFile) {
                 editor.filename = filepath;
                 if (loadBinaryData(&editor)) {
                     Asset *asset = &editor.asset;
-                    printf(CONSOLE_ESC(5;12H) "                                                         ");
-                    printf(CONSOLE_ESC(5;12H) "%s", asset->name);
+                    foundOverlays = foundOverlays + 1;
+                    printf(CONSOLE_ESC(5;2H) "                                                                              ");
+                    printf(CONSOLE_ESC(5;2H));
+                    printf("%s%d%s%s", "Overlays [", foundOverlays, "]: ", asset->name);
                     fprintf(outputFile, "%s%s\n", "Name: ", asset->name);
                     fprintf(outputFile, "%s%s\n", "Author: ", asset->author);
                     fprintf(outputFile, "%s%s\n", "Version: ", asset->version);
@@ -303,7 +257,63 @@ void scanDirectoryForOVLs(const char *dirpath, int depth, FILE *outputFile) {
     }
     closedir(dir);
 }
-
+void scanDirectoryForSYS(const char* basePath, FILE *outputFile) {
+    DIR* dir = opendir(basePath);
+    if (!dir) {
+        return;
+    }
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+            char subfolderPath[PATH_MAX];
+            snprintf(subfolderPath, PATH_MAX, "%s%s/", basePath, entry->d_name);
+            char toolboxPath[PATH_MAX];
+            int ret = snprintf(toolboxPath, PATH_MAX, "%s%s", subfolderPath, TOOLBOX_FILE);
+            if (ret < 0) {
+                abort();
+            }
+            FILE* testFile = fopen(toolboxPath, "rb");
+            if (testFile) {
+                fclose(testFile);
+                char flagsPath[PATH_MAX];
+                int ret = snprintf(flagsPath, PATH_MAX, "%s%s/", subfolderPath, FLAGS_DIR);
+                if (ret < 0) {
+                    abort();
+                }
+                char boot2FlagPath[PATH_MAX];
+                ret = snprintf(boot2FlagPath, PATH_MAX, "%s%s", flagsPath, BOOT2_FLAG);
+                if (ret < 0) {
+                    abort();
+                }
+                FILE* jsonFile = fopen(toolboxPath, "r");
+                if (jsonFile) {
+                    char jsonContent[2048] = {0};
+                    fread(jsonContent, 1, sizeof(jsonContent) - 1, jsonFile);
+                    fclose(jsonFile);
+                    removeCR(jsonContent);
+                    char* nameValue = extractValueForKey(jsonContent, "name");
+                    char* tidValue = extractValueForKey(jsonContent, "tid");
+                    //char* requiresRebootValue = extractValueForKey(jsonContent, "requires_reboot");
+                    foundSysmodules = foundSysmodules + 1;
+                    printf(CONSOLE_ESC(6;2H) "                                                                              ");
+                    printf(CONSOLE_ESC(6;2H));
+                    printf("%s%d%s%s", "Sysmodules [", foundSysmodules, "]: ", nameValue ? nameValue : "N/A");
+                    fprintf(outputFile, "%s%s\n", "Name: ", nameValue ? nameValue : "N/A");
+                    fprintf(outputFile, "%s%s\n", "TID: ", tidValue ? tidValue : "N/A");
+                    if (fileExists(boot2FlagPath)) {
+                        fprintf(outputFile, "%s%s\n\n", "Enabled: ", "Yes");
+                    } else {
+                        fprintf(outputFile, "%s%s\n\n", "Enabled: ", "No");
+                    }
+                    free(nameValue);
+                    free(tidValue);
+                }
+                consoleUpdate(NULL);
+            }
+        }
+    }
+    closedir(dir);
+}
 void scanForPayloads(FILE *outputFile) {
     DIR *dir;
     struct dirent *ent;
@@ -313,8 +323,10 @@ void scanForPayloads(FILE *outputFile) {
         return;
     }
     while ((ent = readdir(dir)) != NULL) {
-        printf(CONSOLE_ESC(7;12H) "                                                         ");
-        printf(CONSOLE_ESC(7;12H) "%s", ent->d_name);
+        foundPayloads = foundPayloads + 1;
+        printf(CONSOLE_ESC(7;2H) "                                                                              ");
+        printf(CONSOLE_ESC(7;2H));
+        printf("%s%d%s%s", "Payloads [", foundPayloads, "]: ", ent->d_name);
         fprintf(outputFile, "%s%s\n", "File: ", ent->d_name);
         consoleUpdate(NULL);
     }
@@ -328,8 +340,10 @@ void scanForPatches(FILE *outputFile) {
         struct dirent* entry;
         while ((entry = readdir(dir)) != NULL) {
             if (entry->d_type == DT_DIR && entry->d_name[0] != '.') {
-                printf(CONSOLE_ESC(8;17H) "                                                         ");
-                printf(CONSOLE_ESC(8;17H) "%s", entry->d_name);
+                foundPatches = foundPatches + 1;
+                printf(CONSOLE_ESC(8;2H) "                                                                              ");
+                printf(CONSOLE_ESC(8;2H));
+                printf("%s%d%s%s", "exeFS Patches [", foundPatches, "]: ", entry->d_name);
                 fprintf(outputFile, "%s%s\n", "Folder: ", entry->d_name); 
                 consoleUpdate(NULL);
             }
@@ -415,12 +429,14 @@ void scanForContent(const char *prefix, FILE *outputFile) {
                     fprintf(outputFile, "%s%s\n", "Name: ", name);
                     fprintf(outputFile, "%s%s\n", "TID: ", entry->d_name);
                     int length = strlen(name);
-                    if (length > 55) {
-                        name[52] = '\0';
-                        strcat(name, "...");
+                    if (length > 50) {
+                        name[47] = '\0';
+                        strcat(name, ".");
                     }
-                    printf(CONSOLE_ESC(9;25H) "                                                       ");
-                    printf(CONSOLE_ESC(9;25H) "%s", name);
+                    foundContent = foundContent + 1;
+                    printf(CONSOLE_ESC(9;2H) "                                                                              ");
+                    printf(CONSOLE_ESC(9;2H));
+                    printf("%s%d%s%s", "External game content [", foundContent, "]: ", name);
                     char full_folder_path[300];
                     snprintf(full_folder_path, sizeof(full_folder_path), "%s/%s", "/atmosphere/contents/" , entry->d_name);
                     contains_special_files(full_folder_path, outputFile);
@@ -447,34 +463,33 @@ int exportall() {
 
     fprintf(outputFile, "%s\n\n\n", "Applications");
     printf(CONSOLE_ESC(1C));
-    printf("%s", "Applications: ");
+    printf("%s", "Applications [0]: ");
     scanDirectoryForNROs(dirpath, 0, outputFile);
 
     fprintf(outputFile, "\n%s\n\n\n", "Overlays");
     printf("\n"CONSOLE_ESC(1C));
-    printf("%s", "Overlays: ");
-    lines = lines + 1;
+    printf("%s", "Overlays [0]: ");
     scanDirectoryForOVLs(dirpath, 0, outputFile);
 
     fprintf(outputFile, "\n%s\n\n\n", "Sysmodules");
     printf("\n"CONSOLE_ESC(1C));
-    printf("%s", "Sysmodules: ");
+    printf("%s", "Sysmodules [0]: ");
     dirpath = "/atmosphere/contents/";
     scanDirectoryForSYS(dirpath, outputFile);
 
     fprintf(outputFile, "\n%s\n\n\n", "Payloads");
     printf("\n"CONSOLE_ESC(1C));
-    printf("%s", "Payloads: ");
+    printf("%s", "Payloads [0]: ");
     scanForPayloads(outputFile);
 
     fprintf(outputFile, "\n\n%s\n\n\n", "exeFS Patches");
     printf("\n"CONSOLE_ESC(1C));
-    printf("%s", "exeFS Patches: ");
+    printf("%s", "exeFS Patches [0]: ");
     scanForPatches(outputFile);
 
     fprintf(outputFile, "\n\n%s\n\n\n", "External game content");
     printf("\n"CONSOLE_ESC(1C));
-    printf("%s", "External game content: ");
+    printf("%s", "External game content [0]: ");
     scanForContent(PREFIX, outputFile);
 
     fclose(outputFile); 
