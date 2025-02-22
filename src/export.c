@@ -197,7 +197,16 @@ int loadBinaryData(Editor *editor) {
     }
     return 1;
 }
-
+int checkStarFile(const char *dirpath, const char *filename) {
+    char starFilePath[1024];
+    snprintf(starFilePath, sizeof(starFilePath), "%s/.%s.star", dirpath, filename);
+    FILE *file = fopen(starFilePath, "r");
+    if (file) {
+        fclose(file);
+        return 1;
+    }
+    return 0;
+}
 void scanDirectoryForNROs(const char *dirpath, int depth, FILE *outputFile) {
     if (depth > 2) return;
     DIR *dir = opendir(dirpath);
@@ -218,9 +227,15 @@ void scanDirectoryForNROs(const char *dirpath, int depth, FILE *outputFile) {
                 if (loadBinaryData(&editor)) {
                     Asset *asset = &editor.asset;
                     printf("%s\n", asset->name);
+                    int hasStar = checkStarFile(dirpath, filename);
                     fprintf(outputFile, "%s%s\n", "Name: ", asset->name);
                     fprintf(outputFile, "%s%s\n", "Author: ", asset->author);
                     fprintf(outputFile, "%s%s\n", "Version: ", asset->version);
+                    if (hasStar == 1) {
+                        fprintf(outputFile, "%s%s\n", "Starred: ", "Yes");
+                    } else {
+                        fprintf(outputFile, "%s%s\n", "Starred: ", "No");
+                    }
                     fprintf(outputFile, "%s%s\n\n", "Path: ", filepath);
                     free(asset->nacp);
                     free(asset->icon);
