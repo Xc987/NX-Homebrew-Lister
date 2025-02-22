@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include "main.h"
+#include "boxgui.h"
 
 #define NRO_MAGIC "NRO0"
 #define ASET_MAGIC "ASET"
@@ -12,6 +13,8 @@
 #define FLAGS_DIR "flags"
 #define BOOT2_FLAG "boot2.flag"
 #define PREFIX "0100"
+
+int lines = 0;
 
 typedef struct {
     uint8_t *nacp;
@@ -141,14 +144,15 @@ void scanDirectoryForSYS(const char* basePath, FILE *outputFile) {
                     char* nameValue = extractValueForKey(jsonContent, "name");
                     char* tidValue = extractValueForKey(jsonContent, "tid");
                     //char* requiresRebootValue = extractValueForKey(jsonContent, "requires_reboot");
-                    printf("%s\n", nameValue ? nameValue : "N/A");
+                    printf(CONSOLE_ESC(6;14H) "                                                         ");
+                    printf(CONSOLE_ESC(6;14H) "%s", nameValue ? nameValue : "N/A");
                     fprintf(outputFile, "%s%s\n", "Name: ", nameValue ? nameValue : "N/A");
                     fprintf(outputFile, "%s%s\n", "TID: ", tidValue ? tidValue : "N/A");
                     if (fileExists(boot2FlagPath)) {
                         fprintf(outputFile, "%s%s\n\n", "Enabled: ", "Yes");
                     } else {
                         fprintf(outputFile, "%s%s\n\n", "Enabled: ", "No");
-                    }                    
+                    }
                     free(nameValue);
                     free(tidValue);
                 }
@@ -226,7 +230,8 @@ void scanDirectoryForNROs(const char *dirpath, int depth, FILE *outputFile) {
                 editor.filename = filepath;
                 if (loadBinaryData(&editor)) {
                     Asset *asset = &editor.asset;
-                    printf("%s\n", asset->name);
+                    printf(CONSOLE_ESC(4;16H) "                                                                ");
+                    printf(CONSOLE_ESC(4;16H) "%s", asset->name);
                     int hasStar = checkStarFile(dirpath, filename);
                     fprintf(outputFile, "%s%s\n", "Name: ", asset->name);
                     fprintf(outputFile, "%s%s\n", "Author: ", asset->author);
@@ -274,7 +279,8 @@ void scanDirectoryForOVLs(const char *dirpath, int depth, FILE *outputFile) {
                 editor.filename = filepath;
                 if (loadBinaryData(&editor)) {
                     Asset *asset = &editor.asset;
-                    printf("%s\n", asset->name);
+                    printf(CONSOLE_ESC(5;12H) "                                                         ");
+                    printf(CONSOLE_ESC(5;12H) "%s", asset->name);
                     fprintf(outputFile, "%s%s\n", "Name: ", asset->name);
                     fprintf(outputFile, "%s%s\n", "Author: ", asset->author);
                     fprintf(outputFile, "%s%s\n", "Version: ", asset->version);
@@ -307,7 +313,8 @@ void scanForPayloads(FILE *outputFile) {
         return;
     }
     while ((ent = readdir(dir)) != NULL) {
-        printf("%s\n", ent->d_name);
+        printf(CONSOLE_ESC(7;12H) "                                                         ");
+        printf(CONSOLE_ESC(7;12H) "%s", ent->d_name);
         fprintf(outputFile, "%s%s\n", "File: ", ent->d_name);
         consoleUpdate(NULL);
     }
@@ -321,8 +328,9 @@ void scanForPatches(FILE *outputFile) {
         struct dirent* entry;
         while ((entry = readdir(dir)) != NULL) {
             if (entry->d_type == DT_DIR && entry->d_name[0] != '.') {
-                printf("%s\n", entry->d_name);
-                fprintf(outputFile, "%s%s\n", "Folder: ", entry->d_name);
+                printf(CONSOLE_ESC(8;17H) "                                                         ");
+                printf(CONSOLE_ESC(8;17H) "%s", entry->d_name);
+                fprintf(outputFile, "%s%s\n", "Folder: ", entry->d_name); 
                 consoleUpdate(NULL);
             }
         }
@@ -356,9 +364,6 @@ void scanForContent(const char *prefix, FILE *outputFile) {
     if (!dir) {
         return;
     }
-
-    printf("Scanning %s...\n\n", "/atmosphere/contents/");
-
     while ((entry = readdir(dir)) != NULL) {
         if (entry->d_type == DT_DIR && strncmp(entry->d_name, prefix, strlen(prefix)) == 0) {
             if (entry->d_name[4] == '0') {
@@ -407,14 +412,19 @@ void scanForContent(const char *prefix, FILE *outputFile) {
                 if (R_SUCCEEDED(rc)) {
                     memset(name, 0, sizeof(name));
                     strncpy(name, langentry->name, sizeof(name)-1);
-                    printf("%s\n", name);
                     fprintf(outputFile, "%s%s\n", "Name: ", name);
                     fprintf(outputFile, "%s%s\n", "TID: ", entry->d_name);
+                    int length = strlen(name);
+                    if (length > 55) {
+                        name[52] = '\0';
+                        strcat(name, "...");
+                    }
+                    printf(CONSOLE_ESC(9;25H) "                                                       ");
+                    printf(CONSOLE_ESC(9;25H) "%s", name);
                     char full_folder_path[300];
                     snprintf(full_folder_path, sizeof(full_folder_path), "%s/%s", "/atmosphere/contents/" , entry->d_name);
                     contains_special_files(full_folder_path, outputFile);
                     fprintf(outputFile, "\n");
-                    
                 }
                 nsExit();
             }
@@ -431,36 +441,46 @@ int exportall() {
     PadState pad;
     padInitializeDefault(&pad);
     const char *dirpath = "/switch"; 
-    printf("Scanning for installed homebrew software\n");
+    drawBox();
+    printf(CONSOLE_ESC(1C) "Scanning for installed homebrew software\n\n");
     FILE *outputFile = fopen("/list.txt", "w");
 
     fprintf(outputFile, "%s\n\n\n", "Applications");
-    printf("\n%s\n\n", "Applications");
+    printf(CONSOLE_ESC(1C));
+    printf("%s", "Applications: ");
     scanDirectoryForNROs(dirpath, 0, outputFile);
 
     fprintf(outputFile, "\n%s\n\n\n", "Overlays");
-    printf("\n%s\n\n", "Overlays");
+    printf("\n"CONSOLE_ESC(1C));
+    printf("%s", "Overlays: ");
+    lines = lines + 1;
     scanDirectoryForOVLs(dirpath, 0, outputFile);
 
     fprintf(outputFile, "\n%s\n\n\n", "Sysmodules");
-    printf("\n%s\n\n", "Sysmodules");
+    printf("\n"CONSOLE_ESC(1C));
+    printf("%s", "Sysmodules: ");
     dirpath = "/atmosphere/contents/";
     scanDirectoryForSYS(dirpath, outputFile);
 
     fprintf(outputFile, "\n%s\n\n\n", "Payloads");
-    printf("\n%s\n\n", "Payloads");
+    printf("\n"CONSOLE_ESC(1C));
+    printf("%s", "Payloads: ");
     scanForPayloads(outputFile);
 
     fprintf(outputFile, "\n\n%s\n\n\n", "exeFS Patches");
-    printf("\n%s\n\n", "exeFS Patches");
+    printf("\n"CONSOLE_ESC(1C));
+    printf("%s", "exeFS Patches: ");
     scanForPatches(outputFile);
 
     fprintf(outputFile, "\n\n%s\n\n\n", "External game content");
-    printf("\n%s\n\n", "External game content");
+    printf("\n"CONSOLE_ESC(1C));
+    printf("%s", "External game content: ");
     scanForContent(PREFIX, outputFile);
 
     fclose(outputFile); 
-    printf("\nExpoerted to /list.txt");
+    printf("\n\n" CONSOLE_ESC(1C));
+    printf("Expoerted to /list.txt");
+    
     while (appletMainLoop()) {
         padUpdate(&pad);
         u64 kDown = padGetButtonsDown(&pad);
