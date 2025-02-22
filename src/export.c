@@ -333,8 +333,6 @@ void contains_special_files(const char *folder_path, FILE *outputFile) {
     const char *subfolders[] = {"cheats", "romfs", "exefs"};
     const char *file_name = "icon.jpg";
     struct stat statbuf;
-
-    // Check for each subfolder
     for (int i = 0; i < 3; i++) {
         char subfolder_path[256];
         snprintf(subfolder_path, sizeof(subfolder_path), "%s/%s", folder_path, subfolders[i]);
@@ -343,11 +341,8 @@ void contains_special_files(const char *folder_path, FILE *outputFile) {
             fprintf(outputFile, "%s%s\n", "Content: ", subfolders[i]);
         }
     }
-
-    // Check for the icon.jpg file
     char icon_path[256];
     snprintf(icon_path, sizeof(icon_path), "%s/%s", folder_path, file_name);
-
     if (stat(icon_path, &statbuf) == 0 && S_ISREG(statbuf.st_mode)) {
         fprintf(outputFile, "%s%s\n", "Content: ", file_name);
     }
@@ -411,7 +406,7 @@ void scanForContent(const char *prefix, FILE *outputFile) {
 
                 if (R_SUCCEEDED(rc)) {
                     memset(name, 0, sizeof(name));
-                    strncpy(name, langentry->name, sizeof(name)-1);//Don't assume the nacp string is NUL-terminated for safety.
+                    strncpy(name, langentry->name, sizeof(name)-1);
                     printf("%s\n", name);
                     fprintf(outputFile, "%s%s\n", "Name: ", name);
                     fprintf(outputFile, "%s%s\n", "TID: ", entry->d_name);
