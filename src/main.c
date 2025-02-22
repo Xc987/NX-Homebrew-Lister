@@ -50,7 +50,20 @@ int main(int argc, char* argv[]){
     padInitializeDefault(&pad);
     int selected = 1;
     drawBox();
-    printf(CONSOLE_ESC(38;5;255m) CONSOLE_ESC(1C) "Select an option\n\n" CONSOLE_ESC(0m));
+    AppletType appletType = appletGetAppletType();
+    switch (appletType) {
+        case AppletType_Application:
+            printf(CONSOLE_ESC(38;5;28m) CONSOLE_ESC(1C) "Running in Title Takeover mode.\n\n" CONSOLE_ESC(0m));
+            break;
+        case AppletType_LibraryApplet:
+        case AppletType_OverlayApplet:
+        case AppletType_SystemApplet:
+            printf(CONSOLE_ESC(38;5;196m) CONSOLE_ESC(1C) "Running in applet mode! Scanning larger software will cause a crash!\n\n" CONSOLE_ESC(0m));
+            break;
+        default:
+            printf(CONSOLE_ESC(38;5;214m) CONSOLE_ESC(1C) "Could not get applet mode!\n\n" CONSOLE_ESC(0m));
+            break;
+    }
     printf(CONSOLE_ESC(38;5;255m) CONSOLE_ESC(48;5;19m) CONSOLE_ESC(1C) "List aplications                                                              \n" CONSOLE_ESC(0m));
     printf(CONSOLE_ESC(38;5;241m) CONSOLE_ESC(1C) "List overlays\n" CONSOLE_ESC(0m));
     printf(CONSOLE_ESC(38;5;241m) CONSOLE_ESC(1C) "List sysmodules\n" CONSOLE_ESC(0m));
