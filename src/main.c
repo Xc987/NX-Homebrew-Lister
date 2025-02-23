@@ -53,29 +53,25 @@ void printDetails() {
     printf(CONSOLE_ESC(45;2H));
     printf("%s%d%s%d%s%d", "HOS: ", (int)major, ".", (int)minor, ".", (int)micro);
 
-    fsInitialize();
-    FsFileSystem sdFs;
-    fsOpenSdCardFileSystem(&sdFs);
-    s64 totalSpaceBytes2, freeSpaceBytes2;
-    fsFsGetTotalSpace(&sdFs, "/", &totalSpaceBytes2);
-    fsFsGetFreeSpace(&sdFs, "/", &freeSpaceBytes2);
-    double totalSpaceGB2 = (double)totalSpaceBytes2 / (1024 * 1024 * 1024);
-    double freeSpaceGB2 = (double)freeSpaceBytes2 / (1024 * 1024 * 1024);
+    FsFileSystem *sdFs = fsdevGetDeviceFileSystem("sdmc");
+    s64 totalSpaceBytes, freeSpaceBytes;
+    fsFsGetTotalSpace(sdFs, "/", &totalSpaceBytes);
+    fsFsGetFreeSpace(sdFs, "/", &freeSpaceBytes);
+    double totalSpaceGB = (double)totalSpaceBytes / (1024 * 1024 * 1024);
+    double freeSpaceGB = (double)freeSpaceBytes / (1024 * 1024 * 1024);
     printf(CONSOLE_ESC(45;15H));
-    printf("SD:%.2f/%.2fGB", freeSpaceGB2, totalSpaceGB2);
-    fsFsClose(&sdFs);
-    fsdevUnmountAll();
+    printf("SD:%.2f/%.2fGB", freeSpaceGB, totalSpaceGB);
 
     fsInitialize();
     FsFileSystem userFs;
     fsOpenBisFileSystem(&userFs, FsBisPartitionId_User, "");
-    s64 totalSpaceBytes, freeSpaceBytes;
-    fsFsGetTotalSpace(&userFs, "/", &totalSpaceBytes);
-    fsFsGetFreeSpace(&userFs, "/", &freeSpaceBytes);
-    double totalSpaceGB = (double)totalSpaceBytes / (1024 * 1024 * 1024);
-    double freeSpaceGB = (double)freeSpaceBytes / (1024 * 1024 * 1024);
+    s64 totalSpaceBytes2, freeSpaceBytes2;
+    fsFsGetTotalSpace(&userFs, "/", &totalSpaceBytes2);
+    fsFsGetFreeSpace(&userFs, "/", &freeSpaceBytes2);
+    double totalSpaceGB2 = (double)totalSpaceBytes2 / (1024 * 1024 * 1024);
+    double freeSpaceGB2 = (double)freeSpaceBytes2 / (1024 * 1024 * 1024);
     printf(CONSOLE_ESC(45;34H));
-    printf("NAND:%.2f/%.2fGB", freeSpaceGB, totalSpaceGB);
+    printf("NAND:%.2f/%.2fGB", freeSpaceGB2, totalSpaceGB2);
     fsFsClose(&userFs);
 
     psmInitialize();
@@ -114,6 +110,8 @@ void printDetails() {
         printf(CONSOLE_ESC(45;74H) CONSOLE_ESC(38;5;196m));
         printf(" -"CONSOLE_ESC(0m));
     }
+    printf(CONSOLE_ESC(2;1H));
+    psmExit();
 }
 int main(){
     consoleInit(NULL);
@@ -188,7 +186,6 @@ int main(){
         }
         consoleUpdate(NULL);
     }
-    fsExit();
     consoleExit(NULL);
     if (returnvalue == 1) {
         main();

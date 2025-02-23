@@ -14,6 +14,13 @@
 #define BOOT2_FLAG "boot2.flag"
 #define PREFIX "0100"
 
+int foundApps = 0;
+int foundOverlays = 0;
+int foundSysmodules = 0;
+int foundPayloads = 0;
+int foundPatches = 0;
+int foundContent = 0;
+
 typedef struct {
     uint8_t *nacp;
     uint8_t *icon;
@@ -155,7 +162,6 @@ int checkStarFile(const char *dirpath, const char *filename) {
     return 0;
 }
 void scanDirectoryForNROs(const char *dirpath, int depth, FILE *outputFile) {
-    int foundApps = 0;
     if (depth > 2) return;
     DIR *dir = opendir(dirpath);
     if (!dir) {
@@ -207,7 +213,6 @@ void scanDirectoryForNROs(const char *dirpath, int depth, FILE *outputFile) {
     closedir(dir);
 }
 void scanDirectoryForOVLs(const char *dirpath, int depth, FILE *outputFile) {
-    int foundOverlays = 0;
     if (depth > 1) return;
     DIR *dir = opendir(dirpath);
     if (!dir) {
@@ -253,7 +258,6 @@ void scanDirectoryForOVLs(const char *dirpath, int depth, FILE *outputFile) {
     closedir(dir);
 }
 void scanDirectoryForSYS(const char* basePath, FILE *outputFile) {
-    int foundSysmodules = 0;
     DIR* dir = opendir(basePath);
     if (!dir) {
         return;
@@ -311,7 +315,6 @@ void scanDirectoryForSYS(const char* basePath, FILE *outputFile) {
     closedir(dir);
 }
 void scanForPayloads(FILE *outputFile) {
-    int foundPayloads = 0;
     DIR *dir;
     struct dirent *ent;
     const char *path = "/bootloader/payloads/";
@@ -330,7 +333,6 @@ void scanForPayloads(FILE *outputFile) {
     closedir(dir);
 }
 void scanForPatches(FILE *outputFile) {
-    int foundPatches = 0;
     DIR* dir = opendir("/atmosphere/exefs_patches/");
     if (dir == NULL) {
         return;
@@ -369,7 +371,6 @@ void contains_special_files(const char *folder_path, FILE *outputFile) {
 }
 
 void scanForContent(const char *prefix, FILE *outputFile) {
-    int foundContent = 0;
     DIR *dir;
     struct dirent *entry;
 
@@ -521,6 +522,13 @@ int exportall() {
         }
         if (kDown &  HidNpadButton_A) {
             if (selected == 1 || selected == 2) {
+                foundApps = 0;
+                foundOverlays = 0;
+                foundSysmodules = 0;
+                foundPayloads = 0;
+                foundPatches = 0;
+                foundContent = 0;
+
                 break;
             }
         }
