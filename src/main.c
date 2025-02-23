@@ -43,6 +43,78 @@ void drawselected(int selected) {
         printf(CONSOLE_ESC(13;2H) CONSOLE_ESC(38;5;255m) CONSOLE_ESC(48;5;19m) "Exit                                                                          \n" CONSOLE_ESC(0m));
     }
 }
+
+void printDetails() {
+    
+    u32 version = hosversionGet();
+    uint8_t major = HOSVER_MAJOR(version);
+    uint8_t minor = HOSVER_MINOR(version);
+    uint8_t micro = HOSVER_MICRO(version);
+    printf(CONSOLE_ESC(45;2H));
+    printf("%s%d%s%d%s%d", "HOS: ", (int)major, ".", (int)minor, ".", (int)micro);
+
+    fsInitialize();
+    FsFileSystem sdFs;
+    fsOpenSdCardFileSystem(&sdFs);
+    s64 totalSpaceBytes2, freeSpaceBytes2;
+    fsFsGetTotalSpace(&sdFs, "/", &totalSpaceBytes2);
+    fsFsGetFreeSpace(&sdFs, "/", &freeSpaceBytes2);
+    double totalSpaceGB2 = (double)totalSpaceBytes2 / (1024 * 1024 * 1024);
+    double freeSpaceGB2 = (double)freeSpaceBytes2 / (1024 * 1024 * 1024);
+    printf(CONSOLE_ESC(45;15H));
+    printf("SD:%.2f/%.2fGB", freeSpaceGB2, totalSpaceGB2);
+    fsFsClose(&sdFs);
+    fsdevUnmountAll();
+
+    fsInitialize();
+    FsFileSystem userFs;
+    fsOpenBisFileSystem(&userFs, FsBisPartitionId_User, "");
+    s64 totalSpaceBytes, freeSpaceBytes;
+    fsFsGetTotalSpace(&userFs, "/", &totalSpaceBytes);
+    fsFsGetFreeSpace(&userFs, "/", &freeSpaceBytes);
+    double totalSpaceGB = (double)totalSpaceBytes / (1024 * 1024 * 1024);
+    double freeSpaceGB = (double)freeSpaceBytes / (1024 * 1024 * 1024);
+    printf(CONSOLE_ESC(45;34H));
+    printf("NAND:%.2f/%.2fGB", freeSpaceGB, totalSpaceGB);
+    fsFsClose(&userFs);
+
+    psmInitialize();
+    u32 batteryCharge;
+    psmGetBatteryChargePercentage(&batteryCharge);
+    printf(CONSOLE_ESC(45;76H));
+    printf("%d%%", batteryCharge);
+    if (batteryCharge <= 30 && batteryCharge > 0) {
+        printf(CONSOLE_ESC(45;69H));
+        printf("[");
+        printf(CONSOLE_ESC(38;5;196m));
+        printf("%c", (char) 176);
+        printf(CONSOLE_ESC(0m)"  ]");
+    } else if (batteryCharge <= 60 && batteryCharge > 30) {
+        printf(CONSOLE_ESC(45;69H));
+        printf("[");
+        printf(CONSOLE_ESC(38;5;214m));
+        printf("%c", (char) 177);
+        printf("%c", (char) 177);
+        printf(CONSOLE_ESC(0m)" ]");
+    } else if (batteryCharge <= 60 && batteryCharge > 60) {
+        printf(CONSOLE_ESC(45;69H));
+        printf("[");
+        printf(CONSOLE_ESC(38;5;28m));
+        printf("%c", (char) 178);
+        printf("%c", (char) 178);
+        printf("%c", (char) 178);
+        printf(CONSOLE_ESC(0m)"]");
+    }
+    PsmChargerType chargerType;
+    psmGetChargerType(&chargerType);
+    if (chargerType != PsmChargerType_Unconnected){
+        printf(CONSOLE_ESC(45;74H) CONSOLE_ESC(38;5;28m));
+        printf(" +"CONSOLE_ESC(0m));
+    } else {
+        printf(CONSOLE_ESC(45;74H) CONSOLE_ESC(38;5;196m));
+        printf(" -"CONSOLE_ESC(0m));
+    }
+}
 int main(){
     consoleInit(NULL);
     padConfigureInput(1, HidNpadStyleSet_NpadStandard);
@@ -73,6 +145,7 @@ int main(){
     printf(CONSOLE_ESC(38;5;241m) CONSOLE_ESC(1C) "List external game content\n\n" CONSOLE_ESC(0m));
     printf(CONSOLE_ESC(38;5;241m) CONSOLE_ESC(1C) "Export all\n\n" CONSOLE_ESC(0m));
     printf(CONSOLE_ESC(38;5;241m) CONSOLE_ESC(1C) "Exit" CONSOLE_ESC(0m));
+    printDetails();
     while (appletMainLoop()){
         padUpdate(&pad);
         u64 kDown = padGetButtonsDown(&pad);
@@ -115,6 +188,7 @@ int main(){
         }
         consoleUpdate(NULL);
     }
+    fsExit();
     consoleExit(NULL);
     if (returnvalue == 1) {
         main();
