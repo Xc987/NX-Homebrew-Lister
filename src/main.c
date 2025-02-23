@@ -43,12 +43,13 @@ void drawselected(int selected) {
         printf(CONSOLE_ESC(13;2H) CONSOLE_ESC(38;5;255m) CONSOLE_ESC(48;5;19m) "Exit                                                                          \n" CONSOLE_ESC(0m));
     }
 }
-int main(int argc, char* argv[]){
+int main(){
     consoleInit(NULL);
     padConfigureInput(1, HidNpadStyleSet_NpadStandard);
     PadState pad;
     padInitializeDefault(&pad);
     int selected = 1;
+    int returnvalue = 0;
     drawBox();
     AppletType appletType = appletGetAppletType();
     switch (appletType) {
@@ -106,7 +107,8 @@ int main(int argc, char* argv[]){
             } else if (selected == 6) {
                 //List game mods 0x0100 or 00100*
             } else if (selected == 7) {
-                exportall();
+                returnvalue = exportall();
+                break;
             } else if (selected == 8) {
                 break;
             }
@@ -114,5 +116,8 @@ int main(int argc, char* argv[]){
         consoleUpdate(NULL);
     }
     consoleExit(NULL);
+    if (returnvalue == 1) {
+        main();
+    }
     return 0;
 }

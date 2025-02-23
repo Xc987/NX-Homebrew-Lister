@@ -14,13 +14,6 @@
 #define BOOT2_FLAG "boot2.flag"
 #define PREFIX "0100"
 
-int foundApps = 0;
-int foundOverlays = 0;
-int foundSysmodules = 0;
-int foundPayloads = 0;
-int foundPatches = 0;
-int foundContent = 0;
-
 typedef struct {
     uint8_t *nacp;
     uint8_t *icon;
@@ -162,6 +155,7 @@ int checkStarFile(const char *dirpath, const char *filename) {
     return 0;
 }
 void scanDirectoryForNROs(const char *dirpath, int depth, FILE *outputFile) {
+    int foundApps = 0;
     if (depth > 2) return;
     DIR *dir = opendir(dirpath);
     if (!dir) {
@@ -213,6 +207,7 @@ void scanDirectoryForNROs(const char *dirpath, int depth, FILE *outputFile) {
     closedir(dir);
 }
 void scanDirectoryForOVLs(const char *dirpath, int depth, FILE *outputFile) {
+    int foundOverlays = 0;
     if (depth > 1) return;
     DIR *dir = opendir(dirpath);
     if (!dir) {
@@ -258,6 +253,7 @@ void scanDirectoryForOVLs(const char *dirpath, int depth, FILE *outputFile) {
     closedir(dir);
 }
 void scanDirectoryForSYS(const char* basePath, FILE *outputFile) {
+    int foundSysmodules = 0;
     DIR* dir = opendir(basePath);
     if (!dir) {
         return;
@@ -315,6 +311,7 @@ void scanDirectoryForSYS(const char* basePath, FILE *outputFile) {
     closedir(dir);
 }
 void scanForPayloads(FILE *outputFile) {
+    int foundPayloads = 0;
     DIR *dir;
     struct dirent *ent;
     const char *path = "/bootloader/payloads/";
@@ -333,6 +330,7 @@ void scanForPayloads(FILE *outputFile) {
     closedir(dir);
 }
 void scanForPatches(FILE *outputFile) {
+    int foundPatches = 0;
     DIR* dir = opendir("/atmosphere/exefs_patches/");
     if (dir == NULL) {
         return;
@@ -371,6 +369,7 @@ void contains_special_files(const char *folder_path, FILE *outputFile) {
 }
 
 void scanForContent(const char *prefix, FILE *outputFile) {
+    int foundContent = 0;
     DIR *dir;
     struct dirent *entry;
 
@@ -456,6 +455,7 @@ int exportall() {
     padConfigureInput(1, HidNpadStyleSet_NpadStandard);
     PadState pad;
     padInitializeDefault(&pad);
+    int selected = 1;
     const char *dirpath = "/switch"; 
     drawBox();
     printf(CONSOLE_ESC(1C) "Scanning for installed homebrew software\n\n");
@@ -492,18 +492,45 @@ int exportall() {
     printf("%s", "External game content [0]: ");
     scanForContent(PREFIX, outputFile);
 
-    fclose(outputFile); 
-    printf("\n\n" CONSOLE_ESC(1C));
-    printf("Expoerted to /list.txt");
-    
+    fclose(outputFile);
+    printf("\n\n"CONSOLE_ESC(1C));
+    printf("Expoerted to /list.txt\n\n");
+    printf(CONSOLE_ESC(38;5;255m) CONSOLE_ESC(48;5;19m) CONSOLE_ESC(1C) "Go back                                                                       \n" CONSOLE_ESC(0m));
+    printf(CONSOLE_ESC(38;5;241m) CONSOLE_ESC(1C) "Exit                                                                          \n" CONSOLE_ESC(0m));
     while (appletMainLoop()) {
         padUpdate(&pad);
         u64 kDown = padGetButtonsDown(&pad);
         if (kDown & HidNpadButton_Plus) {
             break;
         }
+        if (kDown & HidNpadButton_AnyUp) {
+            if (selected != 1) {
+                selected = selected - 1;
+                printf(CONSOLE_ESC(2A));
+                printf(CONSOLE_ESC(38;5;255m) CONSOLE_ESC(48;5;19m) CONSOLE_ESC(1C) "Go back                                                                       \n" CONSOLE_ESC(0m));
+                printf(CONSOLE_ESC(38;5;241m) CONSOLE_ESC(1C) "Exit                                                                          \n" CONSOLE_ESC(0m));
+            }
+        }
+        if (kDown & HidNpadButton_AnyDown) {
+            if (selected != 2) {
+                selected = selected + 1;
+                printf(CONSOLE_ESC(2A));
+                printf(CONSOLE_ESC(38;5;241m) CONSOLE_ESC(1C) "Go back                                                                       \n" CONSOLE_ESC(0m));
+                printf(CONSOLE_ESC(38;5;255m) CONSOLE_ESC(48;5;19m) CONSOLE_ESC(1C) "Exit                                                                          \n" CONSOLE_ESC(0m));
+            } 
+        }
+        if (kDown &  HidNpadButton_A) {
+            if (selected == 1 || selected == 2) {
+                break;
+            }
+        }
         consoleUpdate(NULL);
     }
     consoleExit(NULL);
+    if (selected == 1) {
+        return 1;
+    } else if (selected == 2) {
+        return 0;
+    }
     return 0;
 }
