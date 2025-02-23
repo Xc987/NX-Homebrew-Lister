@@ -26,5 +26,5 @@ void drawBox() {
         printf("\n");
     }
 
-    printf(CONSOLE_ESC(2;1H));
+    printf(CONSOLE_ESC(3;1H));
 }

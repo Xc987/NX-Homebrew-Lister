@@ -181,8 +181,8 @@ void scanDirectoryForNROs(const char *dirpath, int depth, FILE *outputFile) {
                 if (loadBinaryData(&editor)) {
                     Asset *asset = &editor.asset;
                     foundApps = foundApps + 1;
-                    printf(CONSOLE_ESC(4;2H) "                                                                              ");
-                    printf(CONSOLE_ESC(4;2H));
+                    printf(CONSOLE_ESC(5;2H) "                                                                              ");
+                    printf(CONSOLE_ESC(5;2H));
                     printf("%s%d%s%s", "Applications [", foundApps, "]: ", asset->name);
                     int hasStar = checkStarFile(dirpath, filename);
                     fprintf(outputFile, "%s%s\n", "Name: ", asset->name);
@@ -199,8 +199,8 @@ void scanDirectoryForNROs(const char *dirpath, int depth, FILE *outputFile) {
                     free(asset->romfs);
                     free(editor.data);
                 }
+                updateDetails();
                 consoleUpdate(NULL);
-                
             }
         } else if (entry->d_type == DT_DIR) {
             if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
@@ -232,8 +232,8 @@ void scanDirectoryForOVLs(const char *dirpath, int depth, FILE *outputFile) {
                 if (loadBinaryData(&editor)) {
                     Asset *asset = &editor.asset;
                     foundOverlays = foundOverlays + 1;
-                    printf(CONSOLE_ESC(5;2H) "                                                                              ");
-                    printf(CONSOLE_ESC(5;2H));
+                    printf(CONSOLE_ESC(6;2H) "                                                                              ");
+                    printf(CONSOLE_ESC(6;2H));
                     printf("%s%d%s%s", "Overlays [", foundOverlays, "]: ", asset->name);
                     fprintf(outputFile, "%s%s\n", "Name: ", asset->name);
                     fprintf(outputFile, "%s%s\n", "Author: ", asset->author);
@@ -244,8 +244,8 @@ void scanDirectoryForOVLs(const char *dirpath, int depth, FILE *outputFile) {
                     free(asset->romfs);
                     free(editor.data);
                 }
+                updateDetails();
                 consoleUpdate(NULL);
-                
             }
         } else if (entry->d_type == DT_DIR) {
             if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
@@ -295,8 +295,8 @@ void scanDirectoryForSYS(const char* basePath, FILE *outputFile) {
                     char* tidValue = extractValueForKey(jsonContent, "tid");
                     //char* requiresRebootValue = extractValueForKey(jsonContent, "requires_reboot");
                     foundSysmodules = foundSysmodules + 1;
-                    printf(CONSOLE_ESC(6;2H) "                                                                              ");
-                    printf(CONSOLE_ESC(6;2H));
+                    printf(CONSOLE_ESC(7;2H) "                                                                              ");
+                    printf(CONSOLE_ESC(7;2H));
                     printf("%s%d%s%s", "Sysmodules [", foundSysmodules, "]: ", nameValue ? nameValue : "N/A");
                     fprintf(outputFile, "%s%s\n", "Name: ", nameValue ? nameValue : "N/A");
                     fprintf(outputFile, "%s%s\n", "TID: ", tidValue ? tidValue : "N/A");
@@ -308,6 +308,7 @@ void scanDirectoryForSYS(const char* basePath, FILE *outputFile) {
                     free(nameValue);
                     free(tidValue);
                 }
+                updateDetails();
                 consoleUpdate(NULL);
             }
         }
@@ -324,10 +325,11 @@ void scanForPayloads(FILE *outputFile) {
     }
     while ((ent = readdir(dir)) != NULL) {
         foundPayloads = foundPayloads + 1;
-        printf(CONSOLE_ESC(7;2H) "                                                                              ");
-        printf(CONSOLE_ESC(7;2H));
+        printf(CONSOLE_ESC(8;2H) "                                                                              ");
+        printf(CONSOLE_ESC(8;2H));
         printf("%s%d%s%s", "Payloads [", foundPayloads, "]: ", ent->d_name);
         fprintf(outputFile, "%s%s\n", "File: ", ent->d_name);
+        updateDetails();
         consoleUpdate(NULL);
     }
     closedir(dir);
@@ -341,10 +343,11 @@ void scanForPatches(FILE *outputFile) {
         while ((entry = readdir(dir)) != NULL) {
             if (entry->d_type == DT_DIR && entry->d_name[0] != '.') {
                 foundPatches = foundPatches + 1;
-                printf(CONSOLE_ESC(8;2H) "                                                                              ");
-                printf(CONSOLE_ESC(8;2H));
+                printf(CONSOLE_ESC(9;2H) "                                                                              ");
+                printf(CONSOLE_ESC(9;2H));
                 printf("%s%d%s%s", "exeFS Patches [", foundPatches, "]: ", entry->d_name);
-                fprintf(outputFile, "%s%s\n", "Folder: ", entry->d_name); 
+                fprintf(outputFile, "%s%s\n", "Folder: ", entry->d_name);
+                updateDetails();
                 consoleUpdate(NULL);
             }
         }
@@ -434,8 +437,8 @@ void scanForContent(const char *prefix, FILE *outputFile) {
                         strcat(name, ".");
                     }
                     foundContent = foundContent + 1;
-                    printf(CONSOLE_ESC(9;2H) "                                                                              ");
-                    printf(CONSOLE_ESC(9;2H));
+                    printf(CONSOLE_ESC(10;2H) "                                                                              ");
+                    printf(CONSOLE_ESC(10;2H));
                     printf("%s%d%s%s", "External game content [", foundContent, "]: ", name);
                     char full_folder_path[300];
                     snprintf(full_folder_path, sizeof(full_folder_path), "%s/%s", "/atmosphere/contents/" , entry->d_name);
@@ -445,10 +448,10 @@ void scanForContent(const char *prefix, FILE *outputFile) {
                 nsExit();
             }
             free(buf);
+            updateDetails();
             consoleUpdate(NULL);
         }
     }
-
     closedir(dir);
 }
 int exportall() {
@@ -459,48 +462,50 @@ int exportall() {
     int selected = 1;
     const char *dirpath = "/switch"; 
     drawBox();
-    printf(CONSOLE_ESC(1C) "Scanning for installed homebrew software\n\n");
+    printDetails();
+    printf(CONSOLE_ESC(3;2H) "Scanning for installed homebrew software");
     FILE *outputFile = fopen("/list.txt", "w");
 
     fprintf(outputFile, "%s\n\n\n", "Applications");
-    printf(CONSOLE_ESC(1C));
+    printf(CONSOLE_ESC(5;2H));
     printf("%s", "Applications [0]: ");
     scanDirectoryForNROs(dirpath, 0, outputFile);
 
     fprintf(outputFile, "\n%s\n\n\n", "Overlays");
-    printf("\n"CONSOLE_ESC(1C));
+    printf(CONSOLE_ESC(6;2H));
     printf("%s", "Overlays [0]: ");
     scanDirectoryForOVLs(dirpath, 0, outputFile);
 
     fprintf(outputFile, "\n%s\n\n\n", "Sysmodules");
-    printf("\n"CONSOLE_ESC(1C));
+    printf(CONSOLE_ESC(7;2H));
     printf("%s", "Sysmodules [0]: ");
     dirpath = "/atmosphere/contents/";
     scanDirectoryForSYS(dirpath, outputFile);
 
     fprintf(outputFile, "\n%s\n\n\n", "Payloads");
-    printf("\n"CONSOLE_ESC(1C));
+    printf(CONSOLE_ESC(8;2H));
     printf("%s", "Payloads [0]: ");
     scanForPayloads(outputFile);
 
     fprintf(outputFile, "\n\n%s\n\n\n", "exeFS Patches");
-    printf("\n"CONSOLE_ESC(1C));
+    printf(CONSOLE_ESC(9;2H));
     printf("%s", "exeFS Patches [0]: ");
     scanForPatches(outputFile);
 
     fprintf(outputFile, "\n\n%s\n\n\n", "External game content");
-    printf("\n"CONSOLE_ESC(1C));
+    printf(CONSOLE_ESC(10;2H));
     printf("%s", "External game content [0]: ");
     scanForContent(PREFIX, outputFile);
 
     fclose(outputFile);
-    printf("\n\n"CONSOLE_ESC(1C));
-    printf("Expoerted to /list.txt\n\n");
-    printf(CONSOLE_ESC(38;5;255m) CONSOLE_ESC(48;5;19m) CONSOLE_ESC(1C) "Go back                                                                       \n" CONSOLE_ESC(0m));
-    printf(CONSOLE_ESC(38;5;241m) CONSOLE_ESC(1C) "Exit                                                                          \n" CONSOLE_ESC(0m));
+    printf(CONSOLE_ESC(12;2H));
+    printf(CONSOLE_ESC(38;5;28m) "Expoerted to /list.txt");
+    printf(CONSOLE_ESC(38;5;255m) CONSOLE_ESC(48;5;19m) CONSOLE_ESC(14;2H) "Go back                                                                       \n" CONSOLE_ESC(0m));
+    printf(CONSOLE_ESC(38;5;241m) CONSOLE_ESC(15;2H) "Exit                                                                          \n" CONSOLE_ESC(0m));
     while (appletMainLoop()) {
         padUpdate(&pad);
         u64 kDown = padGetButtonsDown(&pad);
+        updateDetails();
         if (kDown & HidNpadButton_Plus) {
             break;
         }
@@ -508,16 +513,16 @@ int exportall() {
             if (selected != 1) {
                 selected = selected - 1;
                 printf(CONSOLE_ESC(2A));
-                printf(CONSOLE_ESC(38;5;255m) CONSOLE_ESC(48;5;19m) CONSOLE_ESC(1C) "Go back                                                                       \n" CONSOLE_ESC(0m));
-                printf(CONSOLE_ESC(38;5;241m) CONSOLE_ESC(1C) "Exit                                                                          \n" CONSOLE_ESC(0m));
+                printf(CONSOLE_ESC(38;5;255m) CONSOLE_ESC(48;5;19m) CONSOLE_ESC(14;2H) "Go back                                                                       \n" CONSOLE_ESC(0m));
+                printf(CONSOLE_ESC(38;5;241m) CONSOLE_ESC(15;2H) "Exit                                                                          \n" CONSOLE_ESC(0m));
             }
         }
         if (kDown & HidNpadButton_AnyDown) {
             if (selected != 2) {
                 selected = selected + 1;
                 printf(CONSOLE_ESC(2A));
-                printf(CONSOLE_ESC(38;5;241m) CONSOLE_ESC(1C) "Go back                                                                       \n" CONSOLE_ESC(0m));
-                printf(CONSOLE_ESC(38;5;255m) CONSOLE_ESC(48;5;19m) CONSOLE_ESC(1C) "Exit                                                                          \n" CONSOLE_ESC(0m));
+                printf(CONSOLE_ESC(38;5;241m) CONSOLE_ESC(14;2H) "Go back                                                                       \n" CONSOLE_ESC(0m));
+                printf(CONSOLE_ESC(38;5;255m) CONSOLE_ESC(48;5;19m) CONSOLE_ESC(15;2H) "Exit                                                                          \n" CONSOLE_ESC(0m));
             } 
         }
         if (kDown &  HidNpadButton_A) {
