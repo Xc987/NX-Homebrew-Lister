@@ -1,3 +1,5 @@
 void printDetails();
 void updateDetails();
-int exportall();
+
+int listApps();
+int exportAll();

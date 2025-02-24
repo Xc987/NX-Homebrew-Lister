@@ -28,3 +28,51 @@ void drawBox() {
 
     printf(CONSOLE_ESC(3;1H));
 }
+void drawTop() {
+    printf(CONSOLE_ESC(5;1H));
+    printf("%c", (char) 195);
+    for (int i = 0; i < 78; i++) {
+        printf("%c", (char) 196);
+    }
+    printf("%c", (char) 180);
+}
+void drawBottom() {
+    printf(CONSOLE_ESC(41;1H));
+    printf("%c", (char) 195);
+    for (int i = 0; i < 78; i++) {
+        printf("%c", (char) 196);
+    }
+    printf("%c", (char) 180);
+}
+void drawFirstLine() {
+    printf(CONSOLE_ESC(5;1H));
+    printf("%c", (char) 195);
+    for (int i = 0; i < 31; i++) {
+        printf("%c", (char) 196);
+    }
+    printf("%c", (char) 194);
+    for (int i = 0; i < 25; i++) {
+        printf("%c", (char) 196);
+    }
+    printf("%c", (char) 194);
+    for (int i = 0; i < 20; i++) {
+        printf("%c", (char) 196);
+    }
+    printf("%c", (char) 180);
+}
+void drawLastLine() {
+    printf(CONSOLE_ESC(41;1H));
+    printf("%c", (char) 195);
+    for (int i = 0; i < 31; i++) {
+        printf("%c", (char) 196);
+    }
+    printf("%c", (char) 193);
+    for (int i = 0; i < 25; i++) {
+        printf("%c", (char) 196);
+    }
+    printf("%c", (char) 193);
+    for (int i = 0; i < 20; i++) {
+        printf("%c", (char) 196);
+    }
+    printf("%c", (char) 180);
+}
