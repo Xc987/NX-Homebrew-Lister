@@ -134,7 +134,7 @@ int main(){
     drawTop();
     drawBottom();
     printf(CONSOLE_ESC(3;37H) "Main menu");
-    printf(CONSOLE_ESC(43;22H) "Up/Down - Scroll | B - Exit | A - Select");
+    printf(CONSOLE_ESC(43;22H) "Up/Down - Move | B - Exit | A - Select");
     AppletType appletType = appletGetAppletType();
     printf(CONSOLE_ESC(6;2H));
     switch (appletType) {
