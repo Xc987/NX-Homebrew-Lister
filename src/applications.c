@@ -9,7 +9,9 @@
 #include "read.h"
 
 static int foundApps = 0;
-
+static int foundAppsPage = 0;
+static int selected = 1;
+static int selectedInPage = 1;
 char appNames[150][100];
 char appAuthors[150][100];
 char appVersions[150][100];
@@ -20,10 +22,27 @@ int maxPages = 1;
 
 void displayList() {
     printf(CONSOLE_ESC(6;1H));
-    for (int i = 1; i < 36; i++) {
+    for (int i = (((page-1) * 35) + 1); i < ((page * 35) + 1); i++) {
         printf(CONSOLE_ESC(1C));
         printf("%-31s|%-25s|%-20s\n", appNames[i], appAuthors[i], appVersions[i]);
     }
+}
+void clearSelected() {
+    printf(CONSOLE_ESC(5;1H));
+    for (int i = 0; i < selectedInPage; i++) {
+        printf(CONSOLE_ESC(1B));
+    }
+    printf(CONSOLE_ESC(1C));
+    printf("%-31s|%-25s|%-20s\n", appNames[selected], appAuthors[selected], appVersions[selected]);
+}
+void displaySelected() {
+    printf(CONSOLE_ESC(5;1H));
+    for (int i = 0; i < selectedInPage; i++) {
+        printf(CONSOLE_ESC(1B));
+    }
+    printf(CONSOLE_ESC(1C) CONSOLE_ESC(48;5;19m));
+    printf("%-31s|%-25s|%-20s\n", appNames[selected], appAuthors[selected], appVersions[selected]);
+    printf(CONSOLE_ESC(0m));
 }
 
 static void scanDirectoryForNROs(const char *dirpath, int depth) {
@@ -47,6 +66,11 @@ static void scanDirectoryForNROs(const char *dirpath, int depth) {
                     Asset *asset = &editor.asset;
                     int hasStar = checkStarFile(dirpath, filename);
                     foundApps = foundApps + 1;
+                    foundAppsPage = foundAppsPage + 1;
+                    if (foundAppsPage == 35) {
+                        foundAppsPage = 0;
+                        maxPages = maxPages + 1;
+                    }
                     printf(CONSOLE_ESC(8;2H) "                                                                              ");
                     printf(CONSOLE_ESC(8;2H));
                     printf("%s%d%s%s", "Applications [", foundApps, "]: ", asset->name);
@@ -111,16 +135,59 @@ int listApps(){
     printf("%s", "Applications [0]: ");
     scanDirectoryForNROs("/switch", 0);
 
-    printf(CONSOLE_ESC(3;27H) "List applications - Page 1/3");
+    printf(CONSOLE_ESC(3;27H));
+    printf("%s%d%s%d", "List applications - Page ", page, "/", maxPages);
     drawFirstLine();
     drawLastLine();
     displayList();
+    displaySelected();
     while (appletMainLoop()){
         padUpdate(&pad);
         u64 kDown = padGetButtonsDown(&pad);
         updateDetails();
-        if (kDown & HidNpadButton_Plus)
+        if (kDown & HidNpadButton_Plus) {
             break;
+        }
+        if (kDown & HidNpadButton_AnyUp) {
+            if (selectedInPage != 1) {
+                clearSelected();
+                selected = selected - 1;
+                selectedInPage = selectedInPage - 1;
+                displaySelected();
+            }
+        }
+        if (kDown & HidNpadButton_AnyDown) {
+            if (selectedInPage != 35 && selected != foundApps) {
+                clearSelected();
+                selected = selected + 1;
+                selectedInPage = selectedInPage + 1;
+                displaySelected();
+            } 
+        }
+        if (kDown & HidNpadButton_L) {
+            if (page != 1) {
+                page = page - 1;
+                selected = (((page-1) * 35) + 1);
+                selectedInPage = 1;
+                printf(CONSOLE_ESC(3;27H));
+                printf("%s%d%s%d", "List applications - Page ", page, "/", maxPages);
+                displayList();
+                displaySelected();
+            }
+            
+        }
+        if (kDown & HidNpadButton_R) {
+            if (page != maxPages) {
+                page = page + 1;
+                selected = (((page-1) * 35) + 1);
+                selectedInPage = 1;
+                printf(CONSOLE_ESC(3;27H));
+                printf("%s%d%s%d", "List applications - Page ", page, "/", maxPages);
+                displayList();
+                displaySelected();
+            }
+            
+        }
         consoleUpdate(NULL);
     }
     consoleExit(NULL);
