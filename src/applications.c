@@ -202,78 +202,95 @@ int listApps(){
             break;
         }
         if (kDown & HidNpadButton_A) {
-            drawDetailsBox();
-            printf(CONSOLE_ESC(17;35H) "More details");
-            char* file_path;
-            file_path = malloc(200);
-            strcpy(file_path, appPath[selected]);
-            strcat(file_path, "/");
-            strcat(file_path, appFileName[selected]);
-            print_file_size_in_mb(file_path);
-            long totalSize = 0;
-            printf(CONSOLE_ESC(24;31H));
-            if (strcmp(appPath[selected], "/switch") == 0 ) {
-                printf("-");
-            } else {
-                printDirectorySize(appPath[selected], &totalSize);
-                printf("%.2f MB\n", totalSize / (1024.0 * 1024.0));
-            }  
-            printf(CONSOLE_ESC(19;21H));
-            printf("%s%s","Name: ", fullAppNames[selected]);
-            printf(CONSOLE_ESC(20;21H));
-            printf("%s%s","Author: ", fullAppAuthors[selected]);
-            printf(CONSOLE_ESC(21;21H));
-            printf("%s%s","Version: ", fullAppVersions[selected]);
-            printf(CONSOLE_ESC(22;21H));
-            printf("%s%s","Starred: ", appStars[selected]);
-            printf(CONSOLE_ESC(23;21H));
-            printf("%s","File size: ");
-            printf(CONSOLE_ESC(24;21H));
-            printf("%s","Dir size: ");
-            printf(CONSOLE_ESC(25;21H));
-            printf("%s%s","File name: ", appFileName[selected]);
-            printf(CONSOLE_ESC(26;21H));
-            printf("%s%s","Path: ", appPath[selected]);
+            if (!inDetaisMenu) {
+                drawDetailsBox();
+                printf(CONSOLE_ESC(17;35H) "More details");
+                char* file_path;
+                file_path = malloc(200);
+                strcpy(file_path, appPath[selected]);
+                strcat(file_path, "/");
+                strcat(file_path, appFileName[selected]);
+                print_file_size_in_mb(file_path);
+                long totalSize = 0;
+                printf(CONSOLE_ESC(24;31H));
+                if (strcmp(appPath[selected], "/switch") == 0 ) {
+                    printf("-");
+                } else {
+                    printDirectorySize(appPath[selected], &totalSize);
+                    printf("%.2f MB\n", totalSize / (1024.0 * 1024.0));
+                }  
+                printf(CONSOLE_ESC(19;21H));
+                printf("%s%s","Name: ", fullAppNames[selected]);
+                printf(CONSOLE_ESC(20;21H));
+                printf("%s%s","Author: ", fullAppAuthors[selected]);
+                printf(CONSOLE_ESC(21;21H));
+                printf("%s%s","Version: ", fullAppVersions[selected]);
+                printf(CONSOLE_ESC(22;21H));
+                printf("%s%s","Starred: ", appStars[selected]);
+                printf(CONSOLE_ESC(23;21H));
+                printf("%s","File size: ");
+                printf(CONSOLE_ESC(24;21H));
+                printf("%s","Dir size: ");
+                printf(CONSOLE_ESC(25;21H));
+                printf("%s%s","File name: ", appFileName[selected]);
+                printf(CONSOLE_ESC(26;21H));
+                printf("%s%s","Path: ", appPath[selected]);
+                inDetaisMenu = true;
+            }
+            
         }
         if (kDown & HidNpadButton_AnyUp) {
-            if (selectedInPage != 1) {
-                clearSelected();
-                selected = selected - 1;
-                selectedInPage = selectedInPage - 1;
-                displaySelected();
+            if (!inDetaisMenu) {
+                if (selectedInPage != 1) {
+                    clearSelected();
+                    selected = selected - 1;
+                    selectedInPage = selectedInPage - 1;
+                    displaySelected();
+                }
             }
         }
         if (kDown & HidNpadButton_AnyDown) {
-            if (selectedInPage != 35 && selected != foundApps) {
-                clearSelected();
-                selected = selected + 1;
-                selectedInPage = selectedInPage + 1;
-                displaySelected();
-            } 
+            if (!inDetaisMenu) {
+                if (selectedInPage != 35 && selected != foundApps) {
+                    clearSelected();
+                    selected = selected + 1;
+                    selectedInPage = selectedInPage + 1;
+                    displaySelected();
+                }
+            }
         }
         if (kDown & HidNpadButton_L) {
-            if (page != 1) {
-                page = page - 1;
-                selected = (((page-1) * 35) + 1);
-                selectedInPage = 1;
-                printf(CONSOLE_ESC(3;27H));
-                printf("%s%d%s%d", "List applications - Page ", page, "/", maxPages);
-                displayList();
-                displaySelected();
+            if (!inDetaisMenu) {
+                if (page != 1) {
+                    page = page - 1;
+                    selected = (((page-1) * 35) + 1);
+                    selectedInPage = 1;
+                    printf(CONSOLE_ESC(3;27H));
+                    printf("%s%d%s%d", "List applications - Page ", page, "/", maxPages);
+                    displayList();
+                    displaySelected();
+                }
             }
-            
         }
         if (kDown & HidNpadButton_R) {
-            if (page != maxPages) {
-                page = page + 1;
-                selected = (((page-1) * 35) + 1);
-                selectedInPage = 1;
-                printf(CONSOLE_ESC(3;27H));
-                printf("%s%d%s%d", "List applications - Page ", page, "/", maxPages);
+            if (!inDetaisMenu) {
+                if (page != maxPages) {
+                    page = page + 1;
+                    selected = (((page-1) * 35) + 1);
+                    selectedInPage = 1;
+                    printf(CONSOLE_ESC(3;27H));
+                    printf("%s%d%s%d", "List applications - Page ", page, "/", maxPages);
+                    displayList();
+                    displaySelected();
+                }
+            }
+        }
+        if (kDown & HidNpadButton_B) {
+            if (inDetaisMenu) {
                 displayList();
                 displaySelected();
+                inDetaisMenu = false;
             }
-            
         }
         consoleUpdate(NULL);
     }
