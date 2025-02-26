@@ -128,3 +128,43 @@ int checkStarFile(const char *dirpath, const char *filename) {
     }
     return 0;
 }
+double getFileSize(const char *file_path) {
+    struct stat file_stat;
+    if (stat(file_path, &file_stat) != 0) {
+        return 0;
+    }
+    double size_in_mb = (double)file_stat.st_size / (1024 * 1024);
+    return size_in_mb;
+}
+long getDirectorySize(const char* path) {
+    DIR* dir;
+    struct dirent* entry;
+    struct stat fileStat;
+    long totalSize = 0;
+
+    dir = opendir(path);
+    if (!dir) {
+        printf("Failed to open directory: %s\n", path);
+        return -1;
+    }
+
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+        
+        char fullPath[PATH_MAX];
+        snprintf(fullPath, sizeof(fullPath), "%s/%s", path, entry->d_name);
+        
+        if (stat(fullPath, &fileStat) == 0) {
+            if (S_ISDIR(fileStat.st_mode)) {
+                totalSize += getDirectorySize(fullPath);
+            } else {
+                totalSize += fileStat.st_size;
+            }
+        }
+    }
+
+    closedir(dir);
+    return totalSize;
+}

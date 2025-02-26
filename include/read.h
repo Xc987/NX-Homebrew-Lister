@@ -29,3 +29,5 @@ char* extractValueForKey(const char* json, const char* key);
 void loadAsset(Asset *asset, uint8_t *data, size_t size);
 int loadBinaryData(Editor *editor);
 int checkStarFile(const char *dirpath, const char *filename);
+double getFileSize(const char *file_path);
+long getDirectorySize(const char* path);
