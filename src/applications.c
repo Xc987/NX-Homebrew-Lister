@@ -25,6 +25,7 @@ int page = 1;
 int maxPages = 1;
 bool inDetaisMenu = false;
 bool inOptionsMenu = false;
+int exitFlag = 0;
 
 
 void displayList() {
@@ -336,10 +337,53 @@ int listApps(){
                 displayList();
                 displaySelected();
                 inDetaisMenu = false;
+            } else {
+                foundApps = 0;
+                foundAppsPage = 0;
+                selected = 1;
+                selectedInPage = 1;
+                for (int i = 0; i < 150; i++) {
+                    memset(appNames[i], '\0', 50); // Clear each string
+                }
+                for (int i = 0; i < 150; i++) {
+                    memset(appAuthors[i], '\0', 50); // Clear each string
+                }
+                for (int i = 0; i < 150; i++) {
+                    memset(appVersions[i], '\0', 50); // Clear each string
+                }
+                for (int i = 0; i < 150; i++) {
+                    memset(fullAppNames[i], '\0', 50); // Clear each string
+                }
+                for (int i = 0; i < 150; i++) {
+                    memset(fullAppAuthors[i], '\0', 50); // Clear each string
+                }
+                for (int i = 0; i < 150; i++) {
+                    memset(fullAppVersions[i], '\0', 50); // Clear each string
+                }
+                for (int i = 0; i < 150; i++) {
+                    memset(appStars[i], '\0', 50); // Clear each string
+                }
+                for (int i = 0; i < 150; i++) {
+                    memset(appFileName[i], '\0', 50); // Clear each string
+                }
+                for (int i = 0; i < 150; i++) {
+                    memset(appPath[i], '\0', 50); // Clear each string
+                }
+                page = 1;
+                maxPages = 1;
+                inDetaisMenu = false;
+                inOptionsMenu = false;
+                exitFlag = 1;
+                break;
             }
         }
         consoleUpdate(NULL);
     }
     consoleExit(NULL);
+    if (exitFlag == 1) {
+        return 1;
+    } else if (exitFlag == 0) {
+        return 0;
+    }
     return 0;
 }
