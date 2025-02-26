@@ -167,18 +167,62 @@ int main(){
             break;
         }
         if (kDown & HidNpadButton_AnyUp) {
-            if (selected != 1) {
-                clearselected(selected);
-                selected = selected - 1;
-                drawselected(selected);
+            u64 startTime = armGetSystemTick();
+            bool held = false;
+            while (padGetButtons(&pad) & HidNpadButton_AnyUp) {
+                if (armGetSystemTick() - startTime > armGetSystemTickFreq() / 3) {
+                    held = true;
+                    break;
+                }
+                padUpdate(&pad);
+            }
+            if (held) {
+                while (padGetButtons(&pad) & HidNpadButton_AnyUp) {
+                    if (selected != 1) {
+                        clearselected(selected);
+                        selected = selected - 1;
+                        drawselected(selected);
+                    }
+                    consoleUpdate(NULL);
+                    svcSleepThread(40000000);
+                    padUpdate(&pad);
+                }
+            } else {
+                if (selected != 1) {
+                    clearselected(selected);
+                    selected = selected - 1;
+                    drawselected(selected);
+                }
             }
         }
         if (kDown & HidNpadButton_AnyDown) {
-            if (selected != 8) {
-                clearselected(selected);
-                selected = selected + 1;
-                drawselected(selected);
-            } 
+            u64 startTime = armGetSystemTick();
+            bool held = false;
+            while (padGetButtons(&pad) & HidNpadButton_AnyDown) {
+                if (armGetSystemTick() - startTime > armGetSystemTickFreq() / 3) {
+                    held = true;
+                    break;
+                }
+                padUpdate(&pad);
+            }
+            if (held) {
+                while (padGetButtons(&pad) & HidNpadButton_AnyDown) {
+                    if (selected != 8) {
+                        clearselected(selected);
+                        selected = selected + 1;
+                        drawselected(selected);
+                    } 
+                    consoleUpdate(NULL);
+                    svcSleepThread(40000000);
+                    padUpdate(&pad);
+                }
+            } else {
+                if (selected != 8) {
+                    clearselected(selected);
+                    selected = selected + 1;
+                    drawselected(selected);
+                } 
+            }
         }
         if (kDown &  HidNpadButton_A) {
             if (selected == 1) {

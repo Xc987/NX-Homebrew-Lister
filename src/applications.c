@@ -183,7 +183,7 @@ int listApps(){
     drawTop();
     drawBottom();
     printf(CONSOLE_ESC(3;33H) "List applications");
-    printf(CONSOLE_ESC(43;3H) "L/R - Change pages | Up/Down - Scroll | Y - Options | B - Back | A - Details");
+    printf(CONSOLE_ESC(43;3H) "L/R - Change pages | Up/Down - Move | Y - Options | B - Back | A - Details");
     printf(CONSOLE_ESC(6;2H) "Scanning for installed applications.");
     printf(CONSOLE_ESC(8;2H));
     printf("%s", "Applications [0]: ");
@@ -241,21 +241,67 @@ int listApps(){
         }
         if (kDown & HidNpadButton_AnyUp) {
             if (!inDetaisMenu) {
-                if (selectedInPage != 1) {
-                    clearSelected();
-                    selected = selected - 1;
-                    selectedInPage = selectedInPage - 1;
-                    displaySelected();
+                u64 startTime = armGetSystemTick();
+                bool held = false;
+                while (padGetButtons(&pad) & HidNpadButton_AnyUp) {
+                    if (armGetSystemTick() - startTime > armGetSystemTickFreq() / 3) {
+                        held = true;
+                        break;
+                    }
+                    padUpdate(&pad);
+                }
+                if (held) {
+                    while (padGetButtons(&pad) & HidNpadButton_AnyUp) {
+                        if (selectedInPage != 1) {
+                            clearSelected();
+                            selected = selected - 1;
+                            selectedInPage = selectedInPage - 1;
+                            displaySelected();
+                        }
+                        consoleUpdate(NULL);
+                        svcSleepThread(40000000);
+                        padUpdate(&pad);
+                    }
+                } else {
+                    if (selectedInPage != 1) {
+                        clearSelected();
+                        selected = selected - 1;
+                        selectedInPage = selectedInPage - 1;
+                        displaySelected();
+                    }
                 }
             }
         }
         if (kDown & HidNpadButton_AnyDown) {
             if (!inDetaisMenu) {
-                if (selectedInPage != 35 && selected != foundApps) {
-                    clearSelected();
-                    selected = selected + 1;
-                    selectedInPage = selectedInPage + 1;
-                    displaySelected();
+                u64 startTime = armGetSystemTick();
+                bool held = false;
+                while (padGetButtons(&pad) & HidNpadButton_AnyDown) {
+                    if (armGetSystemTick() - startTime > armGetSystemTickFreq() / 3) {
+                        held = true;
+                        break;
+                    }
+                    padUpdate(&pad);
+                }
+                if (held) {
+                    while (padGetButtons(&pad) & HidNpadButton_AnyDown) {
+                        if (selectedInPage != 35 && selected != foundApps) {
+                            clearSelected();
+                            selected = selected + 1;
+                            selectedInPage = selectedInPage + 1;
+                            displaySelected();
+                        }
+                        consoleUpdate(NULL);
+                        svcSleepThread(40000000);
+                        padUpdate(&pad);
+                    }
+                } else {
+                    if (selectedInPage != 35 && selected != foundApps) {
+                        clearSelected();
+                        selected = selected + 1;
+                        selectedInPage = selectedInPage + 1;
+                        displaySelected();
+                    }
                 }
             }
         }
