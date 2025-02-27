@@ -163,9 +163,6 @@ int main(){
         padUpdate(&pad);
         u64 kDown = padGetButtonsDown(&pad);
         updateDetails();
-        if (kDown & HidNpadButton_Plus) {
-            break;
-        }
         if (kDown & HidNpadButton_AnyUp) {
             u64 startTime = armGetSystemTick();
             bool held = false;
@@ -229,7 +226,8 @@ int main(){
                 returnvalue = listApps();
                 break;
             } else if (selected == 2) {
-                //List ovl
+                returnvalue = listOverlays();
+                break;
             } else if (selected == 3) {
                 //List sys
             } else if (selected == 4) {

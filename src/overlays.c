@@ -13,15 +13,14 @@ static int foundAppsPage = 0;
 static int selected = 1;
 static int selectedInPage = 1;
 static int subSelected = 1;
-static char appNames[150][100];
-static char appAuthors[150][100];
-static char appVersions[150][100];
-static char fullAppNames[150][100];
-static char fullAppAuthors[150][100];
-static char fullAppVersions[150][100];
-static char appStars[150][10];
-static char appFileName[150][100];
-static char appPath[150][100];
+static char ovlNames[150][100];
+static char ovlAuthors[150][100];
+static char ovlVersions[150][100];
+static char fullOvlNames[150][100];
+static char fullOvlAuthors[150][100];
+static char fullOvlVersions[150][100];
+static char ovlFileName[150][100];
+static char ovlPath[150][100];
 static int page = 1;
 static int maxPages = 1;
 static bool inDetaisMenu = false;
@@ -35,31 +34,28 @@ static void clearVariables() {
     selectedInPage = 1;
     subSelected = 1;
     for (int i = 0; i < 150; i++) {
-        memset(appNames[i], '\0', 50);
+        memset(ovlNames[i], '\0', 50);
     }
     for (int i = 0; i < 150; i++) {
-        memset(appAuthors[i], '\0', 50);
+        memset(ovlAuthors[i], '\0', 50);
     }
     for (int i = 0; i < 150; i++) {
-        memset(appVersions[i], '\0', 50);
+        memset(ovlVersions[i], '\0', 50);
     }
     for (int i = 0; i < 150; i++) {
-        memset(fullAppNames[i], '\0', 50);
+        memset(fullOvlNames[i], '\0', 50);
     }
     for (int i = 0; i < 150; i++) {
-        memset(fullAppAuthors[i], '\0', 50);
+        memset(fullOvlAuthors[i], '\0', 50);
     }
     for (int i = 0; i < 150; i++) {
-        memset(fullAppVersions[i], '\0', 50);
+        memset(fullOvlVersions[i], '\0', 50);
     }
     for (int i = 0; i < 150; i++) {
-        memset(appStars[i], '\0', 50);
+        memset(ovlFileName[i], '\0', 50);
     }
     for (int i = 0; i < 150; i++) {
-        memset(appFileName[i], '\0', 50);
-    }
-    for (int i = 0; i < 150; i++) {
-        memset(appPath[i], '\0', 50);
+        memset(ovlPath[i], '\0', 50);
     }
     page = 1;
     maxPages = 1;
@@ -70,7 +66,7 @@ static void displayList() {
     printf(CONSOLE_ESC(6;1H));
     for (int i = (((page-1) * 35) + 1); i < ((page * 35) + 1); i++) {
         printf(CONSOLE_ESC(1C));
-        printf("%-31s|%-25s|%-20s\n", appNames[i], appAuthors[i], appVersions[i]);
+        printf("%-31s|%-25s|%-20s\n", ovlNames[i], ovlAuthors[i], ovlVersions[i]);
     }
 }
 static void clearSelected() {
@@ -79,7 +75,7 @@ static void clearSelected() {
         printf(CONSOLE_ESC(1B));
     }
     printf(CONSOLE_ESC(1C));
-    printf("%-31s|%-25s|%-20s\n", appNames[selected], appAuthors[selected], appVersions[selected]);
+    printf("%-31s|%-25s|%-20s\n", ovlNames[selected], ovlAuthors[selected], ovlVersions[selected]);
 }
 static void displaySelected() {
     printf(CONSOLE_ESC(5;1H));
@@ -87,32 +83,10 @@ static void displaySelected() {
         printf(CONSOLE_ESC(1B));
     }
     printf(CONSOLE_ESC(1C) CONSOLE_ESC(48;5;19m));
-    printf("%-31s|%-25s|%-20s\n", appNames[selected], appAuthors[selected], appVersions[selected]);
+    printf("%-31s|%-25s|%-20s\n", ovlNames[selected], ovlAuthors[selected], ovlVersions[selected]);
     printf(CONSOLE_ESC(0m));
 }
-static void clearSubSelected() {
-    printf(CONSOLE_ESC(21;31H) CONSOLE_ESC(48;5;236m) "Run app             " CONSOLE_ESC(0m));
-    printf(CONSOLE_ESC(22;31H) CONSOLE_ESC(48;5;236m) "Delete app          " CONSOLE_ESC(0m));
-    if (strcmp(appStars[selected], "No") == 0 ) {
-        printf(CONSOLE_ESC(23;31H) CONSOLE_ESC(48;5;236m) "Star app            " CONSOLE_ESC(0m));
-    } else {
-        printf(CONSOLE_ESC(23;31H) CONSOLE_ESC(48;5;236m) "Untar app           " CONSOLE_ESC(0m));
-    }
-}
-static void displaySubSelected() {
-    if (subSelected == 1) {
-        printf(CONSOLE_ESC(21;31H) CONSOLE_ESC(48;5;19m) "Run app             " CONSOLE_ESC(0m));
-    } else if (subSelected == 2) {
-        printf(CONSOLE_ESC(22;31H) CONSOLE_ESC(48;5;19m) "Delete app          " CONSOLE_ESC(0m));
-    } else if (subSelected == 3) {
-        if (strcmp(appStars[selected], "No") == 0 ) {
-            printf(CONSOLE_ESC(23;31H) CONSOLE_ESC(48;5;19m) "Star app            " CONSOLE_ESC(0m));
-        } else {
-            printf(CONSOLE_ESC(23;31H) CONSOLE_ESC(48;5;19m) "Untar app           " CONSOLE_ESC(0m));
-        }
-    }
-}
-static void scanDirectoryForNROs(const char *dirpath, int depth) {
+static void scanDirectoryForOVLs(const char *dirpath, int depth) {
     if (depth > 2) return;
     DIR *dir = opendir(dirpath);
     struct dirent *entry;
@@ -120,14 +94,13 @@ static void scanDirectoryForNROs(const char *dirpath, int depth) {
         if (entry->d_type == DT_REG) {
             const char *filename = entry->d_name;
             size_t len = strlen(filename);
-            if (len > 4 && strcmp(filename + len - 4, ".nro") == 0) {
+            if (len > 4 && strcmp(filename + len - 4, ".ovl") == 0) {
                 char filepath[1024];
                 snprintf(filepath, sizeof(filepath), "%s/%s", dirpath, filename);
                 Editor editor = {0};
                 editor.filename = filepath;
                 if (loadBinaryData(&editor)) {
                     Asset *asset = &editor.asset;
-                    int hasStar = checkStarFile(dirpath, filename);
                     foundApps = foundApps + 1;
                     foundAppsPage = foundAppsPage + 1;
                     if (foundAppsPage == 35) {
@@ -136,7 +109,7 @@ static void scanDirectoryForNROs(const char *dirpath, int depth) {
                     }
                     printf(CONSOLE_ESC(8;2H) "                                                                              ");
                     printf(CONSOLE_ESC(8;2H));
-                    printf("%s%d%s%s", "Applications [", foundApps, "]: ", asset->name);
+                    printf("%s%d%s%s", "Overlays [", foundApps, "]: ", asset->name);
                     int length = strlen(asset->name);
                     if (length > 34) {
                         asset->name[33] = '\0';
@@ -147,11 +120,11 @@ static void scanDirectoryForNROs(const char *dirpath, int depth) {
                         asset->author[31] = '\0';
                         strcat(asset->author, ".");
                     }
-                    strcpy(fullAppNames[foundApps], asset->name);
-                    strcpy(fullAppAuthors[foundApps], asset->author);
-                    strcpy(fullAppVersions[foundApps], asset->version);
-                    strcpy(appFileName[foundApps], filename);
-                    strcpy(appPath[foundApps], dirpath);
+                    strcpy(fullOvlNames[foundApps], asset->name);
+                    strcpy(fullOvlAuthors[foundApps], asset->author);
+                    strcpy(fullOvlVersions[foundApps], asset->version);
+                    strcpy(ovlFileName[foundApps], filename);
+                    strcpy(ovlPath[foundApps], dirpath);
                     length = strlen(asset->name);
                     if (length > 31) {
                         asset->name[30] = '\0';
@@ -167,14 +140,9 @@ static void scanDirectoryForNROs(const char *dirpath, int depth) {
                         asset->version[19] = '\0';
                         strcat(asset->version, ".");
                     }
-                    strcpy(appNames[foundApps], asset->name);
-                    strcpy(appAuthors[foundApps], asset->author);
-                    strcpy(appVersions[foundApps], asset->version);
-                    if (hasStar == 1) {
-                        strcpy(appStars[foundApps], "Yes");
-                    } else {
-                        strcpy(appStars[foundApps], "No");
-                    }
+                    strcpy(ovlNames[foundApps], asset->name);
+                    strcpy(ovlAuthors[foundApps], asset->author);
+                    strcpy(ovlVersions[foundApps], asset->version);
                     free(asset->nacp);
                     free(asset->icon);
                     free(asset->romfs);
@@ -187,13 +155,13 @@ static void scanDirectoryForNROs(const char *dirpath, int depth) {
             if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
                 char subdirpath[1024];
                 snprintf(subdirpath, sizeof(subdirpath), "%s/%s", dirpath, entry->d_name);
-                scanDirectoryForNROs(subdirpath, depth + 1);
+                scanDirectoryForOVLs(subdirpath, depth + 1);
             }
         }
     }
     closedir(dir);
 }
-int listApps(){
+int listOverlays(){
     consoleInit(NULL);
     padConfigureInput(1, HidNpadStyleSet_NpadStandard);
     PadState pad;
@@ -202,14 +170,14 @@ int listApps(){
     printDetails();
     drawTop();
     drawBottom();
-    printf(CONSOLE_ESC(3;33H) "List applications");
+    printf(CONSOLE_ESC(3;35H) "List overlays");
     printf(CONSOLE_ESC(43;3H) "L/R - Change pages | Up/Down - Move | Y - Options | B - Back | A - Details");
-    printf(CONSOLE_ESC(6;2H) "Scanning for installed applications.");
+    printf(CONSOLE_ESC(6;2H) "Scanning for installed overlays.");
     printf(CONSOLE_ESC(8;2H));
-    printf("%s", "Applications [0]: ");
-    scanDirectoryForNROs("/switch", 0);
-    printf(CONSOLE_ESC(3;27H));
-    printf("%s%d%s%d", "List applications - Page ", page, "/", maxPages);
+    printf("%s", "Overlays [0]: ");
+    scanDirectoryForOVLs("/switch", 0);
+    printf(CONSOLE_ESC(3;29H));
+    printf("%s%d%s%d", "List overlays - Page ", page, "/", maxPages);
     drawFirstLine();
     drawLastLine();
     displayList();
@@ -222,64 +190,30 @@ int listApps(){
             if (!inDetaisMenu && !inOptionsMenu) {
                 drawDetailsBox();
                 char fullPath[1024];
-                snprintf(fullPath, sizeof(fullPath), "%s/%s", appPath[selected], appFileName[selected]);
+                snprintf(fullPath, sizeof(fullPath), "%s/%s", ovlPath[selected], ovlFileName[selected]);
                 double fileSize = getFileSize(fullPath);
                 printf(CONSOLE_ESC(17;35H) "More details");
                 printf(CONSOLE_ESC(19;21H));
-                printf("%s%s","Name: ", fullAppNames[selected]);
+                printf("%s%s","Name: ", fullOvlNames[selected]);
                 printf(CONSOLE_ESC(20;21H));
-                printf("%s%s","Author: ", fullAppAuthors[selected]);
+                printf("%s%s","Author: ", fullOvlAuthors[selected]);
                 printf(CONSOLE_ESC(21;21H));
-                printf("%s%s","Version: ", fullAppVersions[selected]);
+                printf("%s%s","Version: ", fullOvlVersions[selected]);
                 printf(CONSOLE_ESC(22;21H));
-                printf("%s%s","Starred: ", appStars[selected]);
-                printf(CONSOLE_ESC(23;21H));
                 printf("%s%.2f MB","File size: ", fileSize);
+                printf(CONSOLE_ESC(23;21H));
+                printf("%s%s","File name: ", ovlFileName[selected]);
                 printf(CONSOLE_ESC(24;21H));
-                if (strcmp(appPath[selected], "/switch") == 0 ) {
-                    printf("Dir size: -");
-                } else {
-                    long totalSize = getDirectorySize(appPath[selected]);
-                    printf("Dir size: %.2f MB", totalSize / (1024.0 * 1024.0));
-                }
-                printf(CONSOLE_ESC(25;21H));
-                printf("%s%s","File name: ", appFileName[selected]);
-                printf(CONSOLE_ESC(26;21H));
-                printf("%s%s","Path: ", appPath[selected]);
+                printf("%s%s","Path: ", ovlPath[selected]);
                 inDetaisMenu = true;
             }
             if (inOptionsMenu) {
-                if (subSelected == 1) {
-                    char fullPath[1024];
-                    snprintf(fullPath, sizeof(fullPath), "%s/%s", appPath[selected], appFileName[selected]);
-                    envSetNextLoad(fullPath, "");
-                    break;
-                } else if (subSelected == 2) {
-                    if (strcmp(appPath[selected], "/switch") == 0 ) {
-                        char fullPath[1024];
-                        snprintf(fullPath, sizeof(fullPath), "%s/%s", appPath[selected], appFileName[selected]);
-                        remove(fullPath);
-                    } else {
-                        fsdevDeleteDirectoryRecursively(appPath[selected]);
-                    }
-                    clearVariables();
-                    exitFlag = 2;
-                    break;
-                } else if (subSelected == 3) {
-                    if (strcmp(appStars[selected], "No") == 0 ) {
-                        char fullPath[1024];
-                        snprintf(fullPath, sizeof(fullPath), "%s/.%s.star", appPath[selected], appFileName[selected]);
-                        fopen(fullPath, "wb");
-                        strcpy(appStars[selected], "Yes");
-                    } else {
-                        char fullPath[1024];
-                        snprintf(fullPath, sizeof(fullPath), "%s/.%s.star", appPath[selected], appFileName[selected]);
-                        remove(fullPath);
-                        strcpy(appStars[selected], "No");
-                    }
-                    clearSubSelected();
-                    displaySubSelected();
-                }
+                char fullPath[1024];
+                snprintf(fullPath, sizeof(fullPath), "%s/%s", ovlPath[selected], ovlFileName[selected]);
+                remove(fullPath);
+                clearVariables();
+                exitFlag = 2;
+                break;
             }
         }
         if (kDown & HidNpadButton_AnyUp) {
@@ -312,13 +246,6 @@ int listApps(){
                         selectedInPage = selectedInPage - 1;
                         displaySelected();
                     }
-                }
-            }
-            if (inOptionsMenu) {
-                if (subSelected != 1) {
-                    clearSubSelected();
-                    subSelected = subSelected - 1;
-                    displaySubSelected();
                 }
             }
         }
@@ -354,13 +281,6 @@ int listApps(){
                     }
                 }
             }
-            if (inOptionsMenu) {
-                if (subSelected != 3) {
-                    clearSubSelected();
-                    subSelected = subSelected + 1;
-                    displaySubSelected();
-                }
-            }
         }
         if (kDown & HidNpadButton_L) {
             if (!inDetaisMenu && !inOptionsMenu) {
@@ -368,8 +288,8 @@ int listApps(){
                     page = page - 1;
                     selected = (((page-1) * 35) + 1);
                     selectedInPage = 1;
-                    printf(CONSOLE_ESC(3;27H));
-                    printf("%s%d%s%d", "List applications - Page ", page, "/", maxPages);
+                    printf(CONSOLE_ESC(3;29H));
+                    printf("%s%d%s%d", "List overlays - Page ", page, "/", maxPages);
                     displayList();
                     displaySelected();
                 }
@@ -381,8 +301,8 @@ int listApps(){
                     page = page + 1;
                     selected = (((page-1) * 35) + 1);
                     selectedInPage = 1;
-                    printf(CONSOLE_ESC(3;27H));
-                    printf("%s%d%s%d", "List applications - Page ", page, "/", maxPages);
+                    printf(CONSOLE_ESC(3;29H));
+                    printf("%s%d%s%d", "List overlays - Page ", page, "/", maxPages);
                     displayList();
                     displaySelected();
                 }
@@ -405,13 +325,7 @@ int listApps(){
             if (!inOptionsMenu && !inDetaisMenu) {
                 drawOptionsBox();
                 printf(CONSOLE_ESC(19;38H) "Options");
-                printf(CONSOLE_ESC(21;31H) CONSOLE_ESC(48;5;19m) "Run app             " CONSOLE_ESC(0m));
-                printf(CONSOLE_ESC(22;31H) CONSOLE_ESC(48;5;236m) "Delete app" CONSOLE_ESC(0m));
-                if (strcmp(appStars[selected], "No") == 0 ) {
-                    printf(CONSOLE_ESC(23;31H) CONSOLE_ESC(48;5;236m) "Star app" CONSOLE_ESC(0m));
-                } else {
-                    printf(CONSOLE_ESC(23;31H) CONSOLE_ESC(48;5;236m) "Untar app" CONSOLE_ESC(0m));
-                }
+                printf(CONSOLE_ESC(21;31H) CONSOLE_ESC(48;5;19m) "Delete overlay      " CONSOLE_ESC(0m));
                 inOptionsMenu = true;
             }
         }
@@ -421,7 +335,7 @@ int listApps(){
     if (exitFlag == 1) {
         return 1;
     } else if (exitFlag == 2) {
-        listApps();
+        listOverlays();
     }
     return 0;
 }
