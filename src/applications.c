@@ -28,7 +28,44 @@ bool inDetaisMenu = false;
 bool inOptionsMenu = false;
 int exitFlag = 0;
 
-
+void clearVariables() {
+    foundApps = 0;
+    foundAppsPage = 0;
+    selected = 1;
+    selectedInPage = 1;
+    subSelected = 1;
+    for (int i = 0; i < 150; i++) {
+        memset(appNames[i], '\0', 50);
+    }
+    for (int i = 0; i < 150; i++) {
+        memset(appAuthors[i], '\0', 50);
+    }
+    for (int i = 0; i < 150; i++) {
+        memset(appVersions[i], '\0', 50);
+    }
+    for (int i = 0; i < 150; i++) {
+        memset(fullAppNames[i], '\0', 50);
+    }
+    for (int i = 0; i < 150; i++) {
+        memset(fullAppAuthors[i], '\0', 50);
+    }
+    for (int i = 0; i < 150; i++) {
+        memset(fullAppVersions[i], '\0', 50);
+    }
+    for (int i = 0; i < 150; i++) {
+        memset(appStars[i], '\0', 50);
+    }
+    for (int i = 0; i < 150; i++) {
+        memset(appFileName[i], '\0', 50);
+    }
+    for (int i = 0; i < 150; i++) {
+        memset(appPath[i], '\0', 50);
+    }
+    page = 1;
+    maxPages = 1;
+    inDetaisMenu = false;
+    inOptionsMenu = false;
+}
 void displayList() {
     printf(CONSOLE_ESC(6;1H));
     for (int i = (((page-1) * 35) + 1); i < ((page * 35) + 1); i++) {
@@ -56,7 +93,11 @@ void displaySelected() {
 void clearSubSelected() {
     printf(CONSOLE_ESC(21;31H) CONSOLE_ESC(48;5;236m) "Run app             " CONSOLE_ESC(0m));
     printf(CONSOLE_ESC(22;31H) CONSOLE_ESC(48;5;236m) "Delete app          " CONSOLE_ESC(0m));
-    printf(CONSOLE_ESC(23;31H) CONSOLE_ESC(48;5;236m) "Favorite app        " CONSOLE_ESC(0m));
+    if (strcmp(appStars[selected], "No") == 0 ) {
+        printf(CONSOLE_ESC(23;31H) CONSOLE_ESC(48;5;236m) "Star app            " CONSOLE_ESC(0m));
+    } else {
+        printf(CONSOLE_ESC(23;31H) CONSOLE_ESC(48;5;236m) "Untar app           " CONSOLE_ESC(0m));
+    }
     
 }
 void displaySubSelected() {
@@ -65,7 +106,11 @@ void displaySubSelected() {
     } else if (subSelected == 2) {
         printf(CONSOLE_ESC(22;31H) CONSOLE_ESC(48;5;19m) "Delete app          " CONSOLE_ESC(0m));
     } else if (subSelected == 3) {
-        printf(CONSOLE_ESC(23;31H) CONSOLE_ESC(48;5;19m) "Favorite app        " CONSOLE_ESC(0m));
+        if (strcmp(appStars[selected], "No") == 0 ) {
+            printf(CONSOLE_ESC(23;31H) CONSOLE_ESC(48;5;19m) "Star app            " CONSOLE_ESC(0m));
+        } else {
+            printf(CONSOLE_ESC(23;31H) CONSOLE_ESC(48;5;19m) "Untar app           " CONSOLE_ESC(0m));
+        }
     }
 }
 static void scanDirectoryForNROs(const char *dirpath, int depth) {
@@ -179,18 +224,15 @@ int listApps(){
         u64 kDown = padGetButtonsDown(&pad);
         updateDetails();
         if (kDown & HidNpadButton_Plus) {
+            exitFlag = 0;
             break;
         }
         if (kDown & HidNpadButton_A) {
             if (!inDetaisMenu && !inOptionsMenu) {
                 drawDetailsBox();
-                char* fullPath;
-                fullPath = malloc(150);
-                strcpy(fullPath, appPath[selected]);
-                strcat(fullPath, "/");
-                strcat(fullPath, appFileName[selected]);
+                char fullPath[1024];
+                snprintf(fullPath, sizeof(fullPath), "%s/%s", appPath[selected], appFileName[selected]);
                 double fileSize = getFileSize(fullPath);
-
                 printf(CONSOLE_ESC(17;35H) "More details");
                 printf(CONSOLE_ESC(19;21H));
                 printf("%s%s","Name: ", fullAppNames[selected]);
@@ -217,13 +259,35 @@ int listApps(){
             }
             if (inOptionsMenu) {
                 if (subSelected == 1) {
-                    char* fullPath;
-                    fullPath = malloc(150);
-                    strcpy(fullPath, appPath[selected]);
-                    strcat(fullPath, "/");
-                    strcat(fullPath, appFileName[selected]);
+                    char fullPath[1024];
+                    snprintf(fullPath, sizeof(fullPath), "%s/%s", appPath[selected], appFileName[selected]);
                     envSetNextLoad(fullPath, "");
                     break;
+                } else if (subSelected == 2) {
+                    if (strcmp(appPath[selected], "/switch") == 0 ) {
+                        char fullPath[1024];
+                        snprintf(fullPath, sizeof(fullPath), "%s/%s", appPath[selected], appFileName[selected]);
+                        remove(fullPath);
+                    } else {
+                        fsdevDeleteDirectoryRecursively(appPath[selected]);
+                    }
+                    clearVariables();
+                    exitFlag = 2;
+                    break;
+                } else if (subSelected == 3) {
+                    if (strcmp(appStars[selected], "No") == 0 ) {
+                        char fullPath[1024];
+                        snprintf(fullPath, sizeof(fullPath), "%s/.%s.star", appPath[selected], appFileName[selected]);
+                        fopen(fullPath, "wb");
+                        strcpy(appStars[selected], "Yes");
+                    } else {
+                        char fullPath[1024];
+                        snprintf(fullPath, sizeof(fullPath), "%s/.%s.star", appPath[selected], appFileName[selected]);
+                        remove(fullPath);
+                        strcpy(appStars[selected], "No");
+                    }
+                    clearSubSelected();
+                    displaySubSelected();
                 }
             }
         }
@@ -341,41 +405,7 @@ int listApps(){
                 inDetaisMenu = false;
                 inOptionsMenu = false;
             } else {
-                foundApps = 0;
-                foundAppsPage = 0;
-                selected = 1;
-                selectedInPage = 1;
-                for (int i = 0; i < 150; i++) {
-                    memset(appNames[i], '\0', 50);
-                }
-                for (int i = 0; i < 150; i++) {
-                    memset(appAuthors[i], '\0', 50);
-                }
-                for (int i = 0; i < 150; i++) {
-                    memset(appVersions[i], '\0', 50);
-                }
-                for (int i = 0; i < 150; i++) {
-                    memset(fullAppNames[i], '\0', 50);
-                }
-                for (int i = 0; i < 150; i++) {
-                    memset(fullAppAuthors[i], '\0', 50);
-                }
-                for (int i = 0; i < 150; i++) {
-                    memset(fullAppVersions[i], '\0', 50);
-                }
-                for (int i = 0; i < 150; i++) {
-                    memset(appStars[i], '\0', 50);
-                }
-                for (int i = 0; i < 150; i++) {
-                    memset(appFileName[i], '\0', 50);
-                }
-                for (int i = 0; i < 150; i++) {
-                    memset(appPath[i], '\0', 50);
-                }
-                page = 1;
-                maxPages = 1;
-                inDetaisMenu = false;
-                inOptionsMenu = false;
+                clearVariables();
                 exitFlag = 1;
                 break;
             }
@@ -386,17 +416,24 @@ int listApps(){
                 printf(CONSOLE_ESC(19;38H) "Options");
                 printf(CONSOLE_ESC(21;31H) CONSOLE_ESC(48;5;19m) "Run app             " CONSOLE_ESC(0m));
                 printf(CONSOLE_ESC(22;31H) CONSOLE_ESC(48;5;236m) "Delete app" CONSOLE_ESC(0m));
-                printf(CONSOLE_ESC(23;31H) CONSOLE_ESC(48;5;236m) "Favorite app" CONSOLE_ESC(0m));
+                if (strcmp(appStars[selected], "No") == 0 ) {
+                    printf(CONSOLE_ESC(23;31H) CONSOLE_ESC(48;5;236m) "Star app" CONSOLE_ESC(0m));
+                } else {
+                    printf(CONSOLE_ESC(23;31H) CONSOLE_ESC(48;5;236m) "Untar app" CONSOLE_ESC(0m));
+                }
+                
                 inOptionsMenu = true;
             }
         }
         consoleUpdate(NULL);
     }
     consoleExit(NULL);
-    if (exitFlag == 1) {
-        return 1;
-    } else if (exitFlag == 0) {
+    if (exitFlag == 0) {
         return 0;
+    } else if (exitFlag == 1) {
+        return 1;
+    } else if (exitFlag == 2) {
+        listApps();
     }
     return 0;
 }
