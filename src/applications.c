@@ -253,6 +253,7 @@ int listApps(){
                     char fullPath[1024];
                     snprintf(fullPath, sizeof(fullPath), "%s/%s", appPath[selected], appFileName[selected]);
                     envSetNextLoad(fullPath, "");
+                    exitFlag = 0;
                     break;
                 } else if (subSelected == 2) {
                     if (strcmp(appPath[selected], "/switch") == 0 ) {

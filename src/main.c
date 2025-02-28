@@ -229,7 +229,8 @@ int main(){
                 returnvalue = listOverlays();
                 break;
             } else if (selected == 3) {
-                //List sys
+                returnvalue = listSysmodules();
+                break;
             } else if (selected == 4) {
                 //List payl
             } else if (selected == 5) {

@@ -61,10 +61,10 @@ char* extractValueForKey(const char* json, const char* key) {
         value[valueLength] = '\0';
         if (strcmp(value, "true") == 0) {
             free(value);
-            return strdup("true");
+            return strdup("Yes");
         } else if (strcmp(value, "false") == 0) {
             free(value);
-            return strdup("false");
+            return strdup("No");
         }
     } else {
         char* valueEnd = strpbrk(valueStart, ",}\n");
