@@ -4,6 +4,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <jansson.h>
 #include "main.h"
 #include "boxgui.h"
 #include "read.h"
@@ -192,6 +193,30 @@ static void scanDirectoryForNROs(const char *dirpath, int depth) {
         }
     }
     closedir(dir);
+}
+char* read_file(const char* path) {
+    FILE* file = fopen(path, "rb");
+    if (!file) {
+        printf("Failed to open file: %s\n", path);
+        return NULL;
+    }
+
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    char* buffer = (char*)malloc(file_size + 1);
+    if (!buffer) {
+        fclose(file);
+        printf("Failed to allocate memory for file.\n");
+        return NULL;
+    }
+
+    fread(buffer, 1, file_size, file);
+    buffer[file_size] = '\0';
+    fclose(file);
+
+    return buffer;
 }
 int listApps(){
     consoleInit(NULL);
@@ -414,6 +439,69 @@ int listApps(){
                     printf(CONSOLE_ESC(23;31H) CONSOLE_ESC(48;5;236m) "Untar app" CONSOLE_ESC(0m));
                 }
                 inOptionsMenu = true;
+            }
+        }
+        if (kDown & HidNpadButton_X) {
+            if (!inDetaisMenu && !inOptionsMenu) {
+                drawDetailsBox();
+                printf(CONSOLE_ESC(17;35H) "EXTRA details");
+                romfsInit();
+                char fullPath[1024];
+                snprintf(fullPath, sizeof(fullPath), "%s/%s", appPath[selected], appFileName[selected]);
+                char* json_data = read_file("romfs:/repo.json");
+                json_error_t error;
+                json_t* root = json_loads(json_data, 0, &error);
+                json_t* packages = json_object_get(root, "packages");
+                size_t index;
+                json_t* value;
+                json_array_foreach(packages, index, value) {
+                    json_t* binary = json_object_get(value, "binary");
+                    if (json_is_string(binary)) {
+                        const char* binary_path = json_string_value(binary);
+                        if (strcmp(binary_path, fullPath) == 0) {
+                            json_t* updated = json_object_get(value, "updated");
+                            json_t* appCreated = json_object_get(value, "appCreated");
+                            json_t* category = json_object_get(value, "category");
+                            json_t* license = json_object_get(value, "license");
+                            json_t* url = json_object_get(value, "url");
+                            json_t* description = json_object_get(value, "description");
+                            json_t* version = json_object_get(value, "version");
+                            if (json_is_string(updated)) {
+                                printf(CONSOLE_ESC(19;21H));
+                                printf("%s%s","Updated: ", json_string_value(updated));
+                            }
+                            if (json_is_string(appCreated)) {
+                                printf(CONSOLE_ESC(20;21H));
+                                printf("%s%s","Created: ", json_string_value(appCreated));
+                            }
+                            if (json_is_string(category)) {
+                                printf(CONSOLE_ESC(21;21H));
+                                printf("%s%s","Category: ", json_string_value(category));
+                            }
+                            if (json_is_string(license)) {
+                                printf(CONSOLE_ESC(22;21H));
+                                printf("%s%s","License: ", json_string_value(license));
+                            }
+                            if (json_is_string(url)) {
+                                printf(CONSOLE_ESC(23;21H));
+                                printf("%s%s","url: ", json_string_value(url));
+                            }
+                            if (json_is_string(description)) {
+                                printf(CONSOLE_ESC(24;21H));
+                                printf("%s%s","Desc: ", json_string_value(description));
+                            }
+                            if (json_is_string(version)) {
+                                printf(CONSOLE_ESC(25;21H));
+                                printf("%s%s","version: ", json_string_value(version));
+                            }
+                            break;
+                        }
+                    }
+                }
+                if (json_data) free(json_data);
+                if (root) json_decref(root);
+                romfsExit();
+                inDetaisMenu = true;
             }
         }
         consoleUpdate(NULL);

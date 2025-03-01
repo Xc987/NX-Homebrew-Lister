@@ -17,7 +17,7 @@ BUILD		:=	build
 SOURCES		:=	src
 DATA		:=	data
 INCLUDES	:=	include
-#ROMFS	:=	romfs
+ROMFS		:=	romfs
 APP_TITLE   := NX Homebrew Lister
 APP_AUTHOR  := Xc98
 APP_VERSION := 1.0.0
@@ -44,6 +44,7 @@ LIBS	:= -lnx
 # include and lib
 #---------------------------------------------------------------------------------
 LIBDIRS	:= $(PORTLIBS) $(LIBNX)
+LIBS = -lnx -ljansson
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
