@@ -59,6 +59,36 @@ void drawDetailsBox() {
         printf("                                        \n");
     }
 }
+void drawExtraDetailsBox() {
+    printf(CONSOLE_ESC(16;10H) CONSOLE_ESC(48;5;236m));
+    printf("%c", (char) 218);
+    for (int i = 0; i < 60; i++) {
+        printf("%c", (char) 196);
+    }
+    printf("%c", (char) 191);
+    for (int i = 0; i < 13; i++) {
+        printf("\n"CONSOLE_ESC(9C));
+        printf("%c", (char) 179);
+    }
+    printf(CONSOLE_ESC(1D));
+    printf("%c", (char) 192);
+    for (int i = 0; i < 60; i++) {
+        printf("%c", (char) 196);
+    }
+    printf("%c", (char) 217);
+    printf(CONSOLE_ESC(17;1H));
+    for (int i = 0; i < 12; i++) {
+        printf(CONSOLE_ESC(70C));
+        printf("%c", (char) 179);
+        printf(CONSOLE_ESC(1D));
+        printf("\n");
+    }
+    printf(CONSOLE_ESC(17;1H));
+    for (int i = 0; i < 12; i++) {
+        printf(CONSOLE_ESC(10C));
+        printf("                                                            \n");
+    }
+}
 void drawOptionsBox() {
     printf(CONSOLE_ESC(18;30H) CONSOLE_ESC(48;5;236m));
     printf("%c", (char) 218);

@@ -28,6 +28,7 @@ static int maxPages = 1;
 static bool inDetaisMenu = false;
 static bool inOptionsMenu = false;
 static int exitFlag = 1;
+static bool binary_found = false;
 
 static void clearVariables() {
     foundApps = 0;
@@ -196,27 +197,107 @@ static void scanDirectoryForNROs(const char *dirpath, int depth) {
 }
 char* read_file(const char* path) {
     FILE* file = fopen(path, "rb");
-    if (!file) {
-        printf("Failed to open file: %s\n", path);
-        return NULL;
-    }
-
     fseek(file, 0, SEEK_END);
     long file_size = ftell(file);
     fseek(file, 0, SEEK_SET);
-
     char* buffer = (char*)malloc(file_size + 1);
-    if (!buffer) {
-        fclose(file);
-        printf("Failed to allocate memory for file.\n");
-        return NULL;
-    }
-
     fread(buffer, 1, file_size, file);
     buffer[file_size] = '\0';
     fclose(file);
-
     return buffer;
+}
+void read_json(const char* key, const char* keyvalue) {
+    printf(CONSOLE_ESC(17;1H));
+    romfsInit();
+    binary_found = false;
+    char* json_data = read_file("romfs:/repo.json");
+    json_error_t error;
+    json_t* root = json_loads(json_data, 0, &error);
+    json_t* packages = json_object_get(root, "packages");
+    size_t index;
+    json_t* value;
+    json_array_foreach(packages, index, value) {
+        json_t* binary = json_object_get(value, key);
+        if (json_is_string(binary)) {
+            const char* binary_path = json_string_value(binary);
+            if (strcmp(binary_path, keyvalue) == 0) {
+                json_t* updated = json_object_get(value, "updated");
+                json_t* appCreated = json_object_get(value, "appCreated");
+                json_t* category = json_object_get(value, "category");
+                json_t* license = json_object_get(value, "license");
+                json_t* url = json_object_get(value, "url");
+                json_t* description = json_object_get(value, "description");
+                json_t* version = json_object_get(value, "version");
+                json_t* details = json_object_get(value, "details");
+                if (json_is_string(updated)) {
+                    printf(CONSOLE_ESC(19;11H) "                                                            ");
+                    printf(CONSOLE_ESC(19;11H));
+                    printf("%s%s","Updated: ", json_string_value(updated));
+                    binary_found = true;
+                }
+                if (json_is_string(appCreated)) {
+                    printf(CONSOLE_ESC(20;11H) "                                                            ");
+                    printf(CONSOLE_ESC(20;11H));
+                    printf("%s%s","Created: ", json_string_value(appCreated));
+                }
+                if (json_is_string(category)) {
+                    printf(CONSOLE_ESC(21;11H) "                                                            ");
+                    printf(CONSOLE_ESC(21;11H));
+                    printf("%s%s","Category: ", json_string_value(category));
+                }
+                if (json_is_string(version)) {
+                    printf(CONSOLE_ESC(22;11H) "                                                            ");
+                    printf(CONSOLE_ESC(22;11H));
+                    printf("%s%s","version: ", json_string_value(version));
+                }
+                if (json_is_string(license)) {
+                    printf(CONSOLE_ESC(23;11H) "                                                            ");
+                    printf(CONSOLE_ESC(23;11H));
+                    printf("%s%s","License: ", json_string_value(license));
+                }
+                if (json_is_string(url)) {
+                    printf(CONSOLE_ESC(24;11H) "                                                            ");
+                    printf(CONSOLE_ESC(24;11H));
+                    size_t new_len = 54;
+                    char *new_str = (char *)malloc(new_len + 4);
+                    strncpy(new_str, json_string_value(url), new_len);
+                    strcpy(new_str + new_len, ".");
+                    printf("%s%s","url: ", new_str);
+                }
+                if (json_is_string(description)) {
+                    printf(CONSOLE_ESC(25;11H) "                                                            ");
+                    printf(CONSOLE_ESC(25;11H));
+                    size_t new_len = 53;
+                    char *new_str = (char *)malloc(new_len + 4);
+                    strncpy(new_str, json_string_value(description), new_len);
+                    strcpy(new_str + new_len, ".");
+                    printf("%s%s","Desc: ", new_str);
+                }
+                
+                if (json_is_string(details)) {
+                    printf(CONSOLE_ESC(26;11H) "                                                            ");
+                    printf(CONSOLE_ESC(26;11H));
+                    size_t new_len = 50;
+                    char *new_str = (char *)malloc(new_len + 4);
+                    strncpy(new_str, json_string_value(details), new_len);
+                    strcpy(new_str + new_len, ".");
+                    printf("%s%s","Details: ", new_str);
+                }
+                break;
+            }
+        }
+    }
+    if (json_data) free(json_data);
+    if (root) json_decref(root);
+    romfsExit();
+}
+char* remove_last_4_chars(const char *str) {
+    size_t len = strlen(str);
+    size_t new_len = (len > 4) ? (len - 4) : 0;
+    char *new_str = (char *)malloc(new_len + 1);
+    strncpy(new_str, str, new_len);
+    new_str[new_len] = '\0';
+    return new_str;
 }
 int listApps(){
     consoleInit(NULL);
@@ -228,7 +309,7 @@ int listApps(){
     drawTop();
     drawBottom();
     printf(CONSOLE_ESC(3;33H) "List applications");
-    printf(CONSOLE_ESC(43;3H) "L/R - Change pages | Up/Down - Move | Y - Options | B - Back | A - Details");
+    printf(CONSOLE_ESC(43;3H) "L/R - Change pages | X - PKG details | Y - Options | B - Back | A - Details");
     printf(CONSOLE_ESC(6;2H) "Scanning for installed applications.");
     printf(CONSOLE_ESC(8;2H));
     printf("%s", "Applications [0]: ");
@@ -443,64 +524,32 @@ int listApps(){
         }
         if (kDown & HidNpadButton_X) {
             if (!inDetaisMenu && !inOptionsMenu) {
-                drawDetailsBox();
-                printf(CONSOLE_ESC(17;35H) "EXTRA details");
-                romfsInit();
+                drawExtraDetailsBox();
                 char fullPath[1024];
                 snprintf(fullPath, sizeof(fullPath), "%s/%s", appPath[selected], appFileName[selected]);
-                char* json_data = read_file("romfs:/repo.json");
-                json_error_t error;
-                json_t* root = json_loads(json_data, 0, &error);
-                json_t* packages = json_object_get(root, "packages");
-                size_t index;
-                json_t* value;
-                json_array_foreach(packages, index, value) {
-                    json_t* binary = json_object_get(value, "binary");
-                    if (json_is_string(binary)) {
-                        const char* binary_path = json_string_value(binary);
-                        if (strcmp(binary_path, fullPath) == 0) {
-                            json_t* updated = json_object_get(value, "updated");
-                            json_t* appCreated = json_object_get(value, "appCreated");
-                            json_t* category = json_object_get(value, "category");
-                            json_t* license = json_object_get(value, "license");
-                            json_t* url = json_object_get(value, "url");
-                            json_t* description = json_object_get(value, "description");
-                            json_t* version = json_object_get(value, "version");
-                            if (json_is_string(updated)) {
-                                printf(CONSOLE_ESC(19;21H));
-                                printf("%s%s","Updated: ", json_string_value(updated));
-                            }
-                            if (json_is_string(appCreated)) {
-                                printf(CONSOLE_ESC(20;21H));
-                                printf("%s%s","Created: ", json_string_value(appCreated));
-                            }
-                            if (json_is_string(category)) {
-                                printf(CONSOLE_ESC(21;21H));
-                                printf("%s%s","Category: ", json_string_value(category));
-                            }
-                            if (json_is_string(license)) {
-                                printf(CONSOLE_ESC(22;21H));
-                                printf("%s%s","License: ", json_string_value(license));
-                            }
-                            if (json_is_string(url)) {
-                                printf(CONSOLE_ESC(23;21H));
-                                printf("%s%s","url: ", json_string_value(url));
-                            }
-                            if (json_is_string(description)) {
-                                printf(CONSOLE_ESC(24;21H));
-                                printf("%s%s","Desc: ", json_string_value(description));
-                            }
-                            if (json_is_string(version)) {
-                                printf(CONSOLE_ESC(25;21H));
-                                printf("%s%s","version: ", json_string_value(version));
-                            }
-                            break;
-                        }
-                    }
+                char *new_str = remove_last_4_chars(appFileName[selected]);
+                printf(CONSOLE_ESC(17;24H) "Homebrew app store package details");
+                read_json("binary", fullPath);
+                if (!binary_found) {    
+                    printf(CONSOLE_ESC(19;11H));
+                    printf("Couldn't find any package with binary path:");
+                    printf(CONSOLE_ESC(20;11H));
+                    printf(fullPath);
+                    read_json("name", new_str);
                 }
-                if (json_data) free(json_data);
-                if (root) json_decref(root);
-                romfsExit();
+                if (!binary_found) {    
+                    printf(CONSOLE_ESC(22;11H));
+                    printf("Couldn't find any package with name:");
+                    printf(CONSOLE_ESC(23;11H));
+                    printf(new_str);
+                    read_json("title", new_str);
+                }
+                if (!binary_found) {    
+                    printf(CONSOLE_ESC(25;11H));
+                    printf("Couldn't find any package with title:");
+                    printf(CONSOLE_ESC(26;11H));
+                    printf(new_str);
+                }
                 inDetaisMenu = true;
             }
         }

@@ -244,9 +244,6 @@ int main(){
                 break;
             }
         }
-        if (kDown &  HidNpadButton_Y) {
-            drawOptionsBox();
-        }
         consoleUpdate(NULL);
     }
     consoleExit(NULL);
